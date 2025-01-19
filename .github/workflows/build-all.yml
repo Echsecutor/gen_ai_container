@@ -1,4 +1,4 @@
-name: Building All Containers
+name: Building Container
 
 on:
   push:
@@ -6,6 +6,10 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   workflow_setup:
@@ -27,6 +31,13 @@ jobs:
     name: Build invoke_ai container
     needs: workflow_setup
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+      attestations: write
+      id-token: write
+
     steps:
       - name: Check out the repo
         uses: actions/checkout@v4
@@ -43,37 +54,44 @@ jobs:
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v1
         with:
-          registry: ghcr.io
+          registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Metadata
-        id: meta_invoke_ai
+        id: meta
         uses: docker/metadata-action@v4
         with:
-          images: ghcr.io/${{ needs.workflow_setup.outputs.repo_owner }}/invoke_ai
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=ref,event=branch
             type=ref,event=pr
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
           labels: |
-            org.opencontainers.image.title=Invoke AI
-            org.opencontainers.image.description=Invoke AI Webservice
+            org.opencontainers.image.title="Invoke AI"
+            org.opencontainers.image.description="Invoke AI Webservice"
             org.opencontainers.image.vendor=https://github.com/Echsecutor
+            org.opencontainers.image.source=https://github.com/Echsecutor/invoke_ai_container
+            org.opencontainers.image.licenses=MIT
   
-      - name: Build node image
+      - name: Build and push node image
+        id: push
         uses: docker/build-push-action@v3
         with:
-          file: ./Dockerfile
-          context: ./
+          context: .
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta_invoke_ai.outputs.tags }}
-          labels: ${{ steps.meta_invoke_ai.outputs.labels }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           outputs: type=docker,dest=/tmp/invoke_ai.tar
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new
 
+      - name: Generate artifact attestation
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME}}
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true
 
       - name: Upload docker image artifacts
         uses: actions/upload-artifact@v3

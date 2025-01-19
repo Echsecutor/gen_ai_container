@@ -11,7 +11,7 @@ This script [is applied to create a container image](./Dockerfile).
 Copyright 2025 Sebastian Schmittner
 
 <a href="https://opensource.org/license/mit">
-<img alt="Open Source Initiative Approved License" style="border-width:0" src="https://opensource.org/wp-content/themes/osi/assets/img/osi-badge-light.svg" />
+<img alt="Open Source Initiative Approved License" style="border-width:0; max-width:100px;" src="https://opensource.org/wp-content/themes/osi/assets/img/osi-badge-light.svg" />
 </a>
 
 All code in this repository is distributed under the [MIT License](./LICENSE).
