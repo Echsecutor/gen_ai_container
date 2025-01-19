@@ -93,12 +93,6 @@ jobs:
           subject-digest: ${{ steps.push.outputs.digest }}
           push-to-registry: true
 
-      - name: Upload docker image artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: invoke_ai
-          path: /tmp/invoke_ai.tar
-          retention-days: 1
       # Temp fix
       # https://github.com/docker/build-push-action/blob/master/docs/advanced/cache.md#github-cache
       # https://github.com/docker/build-push-action/issues/252
