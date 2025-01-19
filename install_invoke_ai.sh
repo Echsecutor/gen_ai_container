@@ -3,9 +3,6 @@
 set +x
 set -e
 
-apt-get update -y
-apt-get install python3-opencv libopencv-dev -y
-
 echo "INVOKE_AI_PORT=${INVOKE_AI_PORT:=8080}"
 echo "INVOKE_AI_PACKAGE_SPECIFIER=${INVOKE_AI_PACKAGE_SPECIFIER:=invokeai}"
 echo "INVOKE_AI_VERSION=${INVOKE_AI_VERSION:=5.5.0}"
@@ -27,13 +24,14 @@ cd "${INVOKE_AI_DIR}"
 
 # put venv into home dir
 uv venv --relocatable --prompt invoke --python 3.11 --python-preference only-managed ~/invokeai.venv
-source ~/invokeai.venv/bin/activate
+source "$HOME/invokeai.venv/bin/activate"
 
 uv pip install "${INVOKE_AI_PACKAGE_SPECIFIER}"~="${INVOKE_AI_VERSION}" --python 3.11 --python-preference only-managed --force-reinstall
 
 uv pip install pypatchmatch
 
-deactivate && source ~/invokeai.venv/bin/activate
+deactivate
+source "$HOME/invokeai.venv/bin/activate"
 
 echo "host: 0.0.0.0" >>"${INVOKE_AI_DIR}"/invokeai.yaml
 echo "port: ${INVOKE_AI_PORT}" >>"${INVOKE_AI_DIR}"/invokeai.yaml
