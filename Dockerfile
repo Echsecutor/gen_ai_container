@@ -1,4 +1,7 @@
-FROM ubuntu:latest
+#FROM ubuntu:latest
+
+FROM nvidia/pytorch:22.08-py3
+
 
 ARG INVOKE_AI_VERSION=5.5.0
 ARG INVOKE_AI_PORT=8080
