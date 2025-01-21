@@ -1,6 +1,6 @@
-#FROM ubuntu:latest
+FROM ubuntu:latest
 
-FROM nvcr.io/nvidia/pytorch:22.08-py3
+#FROM nvcr.io/nvidia/pytorch:22.08-py3
 
 
 ARG INVOKE_AI_VERSION=5.5.0
