@@ -24,7 +24,10 @@ RUN mkdir $INVOKE_AI_DIR
 
 WORKDIR $INVOKE_AI_DIR
 
-RUN apt-get install curl -y
+RUN  export DEBIAN_FRONTEND=noninteractive && \
+    apt-get install curl -y && \
+    apt-get autoremove -y && \
+    apt-get clean -y
 
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
     . "$HOME/.local/bin/env" && \
