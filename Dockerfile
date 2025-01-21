@@ -35,12 +35,16 @@ RUN . "$HOME/.local/bin/env" && \
     uv pip install "${INVOKE_AI_PACKAGE_SPECIFIER}"~="${INVOKE_AI_VERSION}" --python 3.11 --python-preference only-managed --force-reinstall && \
     uv pip install pypatchmatch
 
-RUN echo "host: 0.0.0.0" >>"${INVOKE_AI_DIR}"/invokeai.yaml && \
-    echo "port: ${INVOKE_AI_PORT}" >>"${INVOKE_AI_DIR}"/invokeai.yaml \
+RUN echo "schema_version: 4.0.2" >>"${INVOKE_AI_DIR}"/invokeai.yaml && \
+    echo "host: 0.0.0.0" >>"${INVOKE_AI_DIR}"/invokeai.yaml && \
+    echo "port: ${INVOKE_AI_PORT}" >>"${INVOKE_AI_DIR}"/invokeai.yaml && \
     echo "hashing_algorithm: 'sha256'" >>"${INVOKE_AI_DIR}"/invokeai.yaml
+
 
 COPY run_invoke_ai_web.sh /
 
 EXPOSE $INVOKE_AI_PORT
 
-CMD ["/run_invoke_ai_web.sh"]
+ENTRYPOINT ["/run_invoke_ai_web.sh"]
+
+#CMD ["/run_invoke_ai_web.sh"]
