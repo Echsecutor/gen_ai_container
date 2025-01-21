@@ -3,7 +3,7 @@
 set +x
 set -e
 
-echo "INVOKE_AI_VENV=${INVOKE_AI_VENV:="/workdir/.venv"}"
+echo "INVOKE_AI_VENV=${INVOKE_AI_VENV:="/invoke/.venv"}"
 
 . "$HOME/.local/bin/env"
 

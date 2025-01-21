@@ -8,7 +8,8 @@ ARG INVOKE_AI_SCHEMA_VERSION=4.0.2
 ARG INVOKE_AI_PORT=8080
 
 ARG INVOKE_AI_PACKAGE_SPECIFIER=invokeai
-ARG INVOKE_AI_DIR=/workdir
+ARG INVOKE_AI_DIR=/invoke
+ARG INVOKE_AI_MODELS_DIR=/workspace
 
 ARG INVOKE_AI_VENV="$INVOKE_AI_DIR/.venv"
 
@@ -42,7 +43,9 @@ RUN . "$HOME/.local/bin/env" && \
 RUN echo "schema_version: ${INVOKE_AI_SCHEMA_VERSION}" >>"${INVOKE_AI_DIR}"/invokeai.yaml && \
     echo "host: 0.0.0.0" >>"${INVOKE_AI_DIR}"/invokeai.yaml && \
     echo "port: ${INVOKE_AI_PORT}" >>"${INVOKE_AI_DIR}"/invokeai.yaml && \
-    echo "hashing_algorithm: 'sha256'" >>"${INVOKE_AI_DIR}"/invokeai.yaml
+    echo "hashing_algorithm: 'sha256'" >>"${INVOKE_AI_DIR}"/invokeai.yaml && \
+    echo "models_dir: ${INVOKE_AI_MODELS_DIR}" >>"${INVOKE_AI_DIR}"/invokeai.yaml && \
+    echo "precision: float16" >>"${INVOKE_AI_DIR}"/invokeai.yaml
 
 
 COPY run_invoke_ai_web.sh /
@@ -50,5 +53,3 @@ COPY run_invoke_ai_web.sh /
 EXPOSE $INVOKE_AI_PORT
 
 ENTRYPOINT ["/run_invoke_ai_web.sh"]
-
-#CMD ["/run_invoke_ai_web.sh"]
