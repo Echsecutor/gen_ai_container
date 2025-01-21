@@ -43,14 +43,6 @@ jobs:
         uses: actions/checkout@v4
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
-      - name: Cache Docker layers
-        uses: actions/cache@v3
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-invoke_ai-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-buildx-invoke_ai
-            ${{ runner.os }}-buildx
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v1
         with:
@@ -83,8 +75,6 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           outputs: type=docker,dest=/tmp/invoke_ai.tar
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache-new
 
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@v2
@@ -92,12 +82,3 @@ jobs:
           subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME}}
           subject-digest: ${{ steps.push.outputs.digest }}
           push-to-registry: true
-
-      # Temp fix
-      # https://github.com/docker/build-push-action/blob/master/docs/advanced/cache.md#github-cache
-      # https://github.com/docker/build-push-action/issues/252
-      # https://github.com/moby/buildkit/issues/1896
-      - name: Move cache
-        run: |
-          rm -rf /tmp/.buildx-cache
-          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
