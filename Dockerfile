@@ -4,6 +4,7 @@ FROM ubuntu:latest
 
 
 ARG INVOKE_AI_VERSION=5.5.0
+ARG INVOKE_AI_SCHEMA_VERSION=4.0.2
 ARG INVOKE_AI_PORT=8080
 
 ARG INVOKE_AI_PACKAGE_SPECIFIER=invokeai
@@ -38,7 +39,7 @@ RUN . "$HOME/.local/bin/env" && \
     uv pip install "${INVOKE_AI_PACKAGE_SPECIFIER}"~="${INVOKE_AI_VERSION}" --python 3.11 --python-preference only-managed --force-reinstall && \
     uv pip install pypatchmatch
 
-RUN echo "schema_version: 4.0.2" >>"${INVOKE_AI_DIR}"/invokeai.yaml && \
+RUN echo "schema_version: ${INVOKE_AI_SCHEMA_VERSION}" >>"${INVOKE_AI_DIR}"/invokeai.yaml && \
     echo "host: 0.0.0.0" >>"${INVOKE_AI_DIR}"/invokeai.yaml && \
     echo "port: ${INVOKE_AI_PORT}" >>"${INVOKE_AI_DIR}"/invokeai.yaml && \
     echo "hashing_algorithm: 'sha256'" >>"${INVOKE_AI_DIR}"/invokeai.yaml
