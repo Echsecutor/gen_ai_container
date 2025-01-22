@@ -1,5 +1,6 @@
 FROM ubuntu:latest
 
+# might have better driver setup, but container gets to large for github pipeline
 #FROM nvcr.io/nvidia/pytorch:22.08-py3
 
 
@@ -22,7 +23,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
 
 RUN apt-get install python3-opencv libopencv-dev -y
 
-RUN mkdir $INVOKE_AI_DIR
+RUN mkdir -p "${INVOKE_AI_DIR}" && mkdir -p "${INVOKE_AI_MODELS_DIR}"
 
 WORKDIR $INVOKE_AI_DIR
 
@@ -51,5 +52,6 @@ RUN echo "schema_version: ${INVOKE_AI_SCHEMA_VERSION}" >>"${INVOKE_AI_DIR}"/invo
 COPY run_invoke_ai_web.sh /
 
 EXPOSE $INVOKE_AI_PORT
+VOLUME ["${INVOKE_AI_MODELS_DIR}"]
 
 ENTRYPOINT ["/run_invoke_ai_web.sh"]
