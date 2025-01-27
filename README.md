@@ -36,6 +36,14 @@ to install invoke ai into a fresh ubuntu image.
 
 - This script [is applied to create a container image](./Dockerfile).
 
+## Usage
+
+Run locally:
+
+```
+docker run --rm -it --name invoke -p 8080:8080 -v YOUR_LOCAL_MODEL_DIR:/workspace ghcr.io/echsecutor/invoke_ai_container:latest
+```
+
 # License
 
 Copyright 2025 Sebastian Schmittner
