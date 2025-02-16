@@ -62,6 +62,6 @@ COPY run_invoke_ai_web.sh /
 RUN mkdir -p "${MOUNT_DIR}"
 
 EXPOSE $INVOKE_AI_PORT
-VOLUME ["${MOUNT_DIR}}"]
+VOLUME ["${MOUNT_DIR}"]
 
 ENTRYPOINT ["/run_invoke_ai_web.sh"]
