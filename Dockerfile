@@ -54,7 +54,9 @@ RUN echo "schema_version: ${INVOKE_AI_SCHEMA_VERSION}" >>"${INVOKE_AI_DIR}"/invo
     echo "outputs_dir: ${INVOKE_AI_OUTPUT_DIR}" >>"${INVOKE_AI_DIR}"/invokeai.yaml && \
     echo "custom_nodes_dir: ${INVOKE_AI_CUSTOM_NODES_DIR}" >>"${INVOKE_AI_DIR}"/invokeai.yaml && \
     echo "style_presets_dir: ${INVOKE_AI_STYLES_DIR}" >>"${INVOKE_AI_DIR}"/invokeai.yaml && \
-    echo "profiles_dir: ${INVOKE_AI_PROFILES_DIR}" >>"${INVOKE_AI_DIR}"/invokeai.yaml
+    echo "profiles_dir: ${INVOKE_AI_PROFILES_DIR}" >>"${INVOKE_AI_DIR}"/invokeai.yaml && \
+    echo "enable_partial_loading: true">>"${INVOKE_AI_DIR}"/invokeai.yaml
+
 
 
 COPY run_invoke_ai_web.sh /

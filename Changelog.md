@@ -2,8 +2,10 @@
 
 ## WIP
 
-- Invoke AI upgraded to 5.6.0
+## 1.2.0 (2025-03-01)
 
+- Invoke AI upgraded to 5.6.0
+- `enable_partial_loading: true`
 
 ## 1.1.0 (2025-02-11)
  

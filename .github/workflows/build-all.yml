@@ -61,7 +61,7 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
           labels: |
             org.opencontainers.image.title="Invoke AI"
-            org.opencontainers.image.description="Invoke AI Webservice"
+            org.opencontainers.image.description="Invoke AI Webservice Container"
             org.opencontainers.image.vendor=https://github.com/Echsecutor
             org.opencontainers.image.source=https://github.com/Echsecutor/invoke_ai_container
             org.opencontainers.image.licenses=MIT

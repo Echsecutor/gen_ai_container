@@ -47,6 +47,9 @@ docker run --gpus device=0 --rm -it --name invoke -p 8080:8080 -v YOUR_LOCAL_MOD
 
 # License
 
+Thi container bundles [InvokeAI](https://github.com/invoke-ai/InvokeAI), which ships under the [Apache 2 License](https://github.com/invoke-ai/InvokeAI/blob/main/LICENSE). All credit for Incoke AI goes to the Invoke Team. The code in this repository is not owned or endorsed by the Invoke AI team.
+
+
 Copyright 2025 Sebastian Schmittner
 
 <a href="https://opensource.org/license/mit">
