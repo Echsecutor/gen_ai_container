@@ -2,6 +2,8 @@
 
 ## WIP
 
+- Invoke AI 5.7.1
+
 ## 1.2.0 (2025-03-01)
 
 - Invoke AI upgraded to 5.6.0
