@@ -21,13 +21,10 @@ RUN apt-get update -y && \
         libxext6
 
 # mount one external volume and link dirs there in
-RUN mkdir -p ${MOUNT_DIR} \
-    && rm -rf /opt/comfyui/models \
-    && ln -s ${MOUNT_DIR}/models /opt/comfyui/models \
-    && rm -rf /opt/comfyui/models \
-    && ln -s ${MOUNT_DIR}/output /opt/comfyui/output \
-    && rm -rf /opt/comfyui/models \
-    && ln -s ${MOUNT_DIR}/custom_nodes /opt/comfyui/custom_nodes
+RUN for dir in models output custom_nodes; do \
+    rm -rf /opt/comfyui/$dir \
+    && mkdir -p ${MOUNT_DIR}/$dir \
+    && ln -s ${MOUNT_DIR}/$dir /opt/comfyui/$dir
 
 
 RUN git clone https://github.com/comfyanonymous/ComfyUI.git /opt/comfyui && \
