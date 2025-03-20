@@ -1,17 +1,20 @@
 [![Building Container](https://github.com/Echsecutor/invoke_ai_container/actions/workflows/build-all.yml/badge.svg)](https://github.com/Echsecutor/invoke_ai_container/actions/workflows/build-all.yml)
 
-# Shipping Invoke AI
+# Shipping AI Containers
 
 <img alt="Artificial Inteligence Cyborg Shipping" src="./shipping_ai.png" height="500" />
 
-This is a minimalist container running invoke web UI 5.5.0. No nonsense included. Just starts the invoke web ui and exposes the port.
+
+## Invoke AI Container
+
+This is a minimalist container running invoke web UI. No nonsense included. Just starts the invoke web ui and exposes the port.
 
 - [You can run this image on runpod](https://runpod.io/console/deploy?template=elr3w646vn&ref=c71blwtm)
 - See https://www.invoke.com/ for Invoke AI Details
   - This container is not created by/endorsed by invoke.
   - I have just turned the installation manual at https://invoke-ai.github.io/InvokeAI/installation/manual/#walkthrough into a Dockerfile.
 
-## Working Invoke AI Features (testet in container on runpod)
+### Working Invoke AI Features (testet in container on runpod)
 - Install + Use starter Models/Models from Huggin Face/Any Models via URL, e.g. from civitai
 - Benchmarks on runpod on A40:
   - SD1,
@@ -21,22 +24,22 @@ This is a minimalist container running invoke web UI 5.5.0. No nonsense included
   - FLUX Models
     - Image generation wall clock time (1024x1024, 30 step) <30s
 
-## Config
-- Models are stored in the volume mounted under `/workspace`
-- Outputs (Images) are stored in the container under `/invoke/outputs`
+### Config
+- Models, the database, outputs,... in short everything you might want to persist is stored in the volume mounted under `/workspace`
+- `/invoke/` contains e.g. the invoke ai config generated at build time
 - Invoke AI Web Service exposed on port 8080 (no login)
 - Exposes Port 22 for scp (through runpod forwarding)
 
 
-# Scripts
+### Container Build
 
-- This repository contains [a script](./install_invoke_ai.sh) version of the manual found at 
+- This repository contains [a script](./invoke_ai_container/install_invoke_ai.sh) version of the manual found at 
 https://invoke-ai.github.io/InvokeAI/installation/manual/
 to install invoke ai into a fresh ubuntu image.
 
-- This script [is applied to create a container image](./Dockerfile).
+- This script [is applied to create a container image](./invoke_ai_container/Dockerfile).
 
-## Usage
+### Usage
 
 Run locally:
 - Be sure to have nvidia stuff installed: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html
@@ -47,7 +50,7 @@ docker run --gpus device=0 --rm -it --name invoke -p 8080:8080 -v YOUR_LOCAL_MOD
 
 # License
 
-Thi container bundles [InvokeAI](https://github.com/invoke-ai/InvokeAI), which ships under the [Apache 2 License](https://github.com/invoke-ai/InvokeAI/blob/main/LICENSE). All credit for Incoke AI goes to the Invoke Team. The code in this repository is not owned or endorsed by the Invoke AI team.
+The Invoke AI container bundles [InvokeAI](https://github.com/invoke-ai/InvokeAI), which ships under the [Apache 2 License](https://github.com/invoke-ai/InvokeAI/blob/main/LICENSE). All credit for Invoke AI go to the Invoke AI Team. The code in this repository is not owned or endorsed by anyone but the author.
 
 
 Copyright 2025 Sebastian Schmittner

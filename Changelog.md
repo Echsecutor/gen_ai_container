@@ -2,6 +2,10 @@
 
 ## WIP
 
+
+- Forked comfy UI container
+  - Added ffmpeg + libs for video generation
+- Moved Invoke to subfolder
 - Invoke AI 5.7.1
 
 ## 1.2.0 (2025-03-01)

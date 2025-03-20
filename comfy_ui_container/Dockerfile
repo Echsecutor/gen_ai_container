@@ -1,0 +1,60 @@
+# This Dockerfile is derived from https://github.com/lecode-official/comfyui-docker/blob/main/Dockerfile licensed under the MIT License https://github.com/lecode-official/comfyui-docker/blob/main/LICENSE
+
+
+# This image is based on the latest official PyTorch image, because it already contains CUDA, CuDNN, and PyTorch
+FROM pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime
+
+ARG COMFY_UI_VERSION=v0.3.26
+ARG COMFY_UI_MANAGER_VERSION=3.31.6
+ARG MOUNT_DIR=/workspace
+
+# Apt should not ask for user input
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Added ffmpeg + libs for video generation
+RUN apt-get update -y && \
+    apt-get install -y \
+        git \
+        sudo \
+        ffmpeg \
+        libsm6 \
+        libxext6
+
+# mount one external volume and link dirs there in
+RUN mkdir -p ${MOUNT_DIR} \
+    && rm -rf /opt/comfyui/models \
+    && ln -s ${MOUNT_DIR}/models /opt/comfyui/models \
+    && rm -rf /opt/comfyui/models \
+    && ln -s ${MOUNT_DIR}/output /opt/comfyui/output \
+    && rm -rf /opt/comfyui/models \
+    && ln -s ${MOUNT_DIR}/custom_nodes /opt/comfyui/custom_nodes
+
+
+RUN git clone https://github.com/comfyanonymous/ComfyUI.git /opt/comfyui && \
+    cd /opt/comfyui && \
+    git checkout tags/${COMFY_UI_VERSION}}
+
+RUN git clone https://github.com/ltdrdata/ComfyUI-Manager.git /opt/comfyui-manager && \
+    cd /opt/comfyui-manager && \
+    git checkout tags/${COMFY_UI_MANAGER_VERSION}}
+
+RUN pip install \
+    --requirement /opt/comfyui/requirements.txt \
+    --requirement /opt/comfyui-manager/requirements.txt
+
+WORKDIR /opt/comfyui
+
+
+EXPOSE 8188
+
+ADD entrypoint.sh /entrypoint.sh
+ENTRYPOINT ["/bin/bash", "/entrypoint.sh"]
+
+VOLUME ["${MOUNT_DIR}"]
+
+
+
+# On startup, ComfyUI is started at its default port; the IP address is changed from localhost to 0.0.0.0, because Docker is only forwarding traffic
+# to the IP address it assigns to the container, which is unknown at build time; listening to 0.0.0.0 means that ComfyUI listens to all incoming
+# traffic; the auto-launch feature is disabled, because we do not want (nor is it possible) to open a browser window in a Docker container
+CMD ["/opt/conda/bin/python", "main.py", "--listen", "0.0.0.0", "--port", "8188", "--disable-auto-launch"]
