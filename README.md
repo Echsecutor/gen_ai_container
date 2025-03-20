@@ -48,12 +48,20 @@ Run locally:
 docker run --gpus device=0 --rm -it --name invoke -p 8080:8080 -v YOUR_LOCAL_MODEL_DIR:/workspace ghcr.io/echsecutor/invoke_ai_container:latest
 ```
 
+
+## Invoke AI Container
+
+
 # License
 
-The Invoke AI container bundles [InvokeAI](https://github.com/invoke-ai/InvokeAI), which ships under the [Apache 2 License](https://github.com/invoke-ai/InvokeAI/blob/main/LICENSE). All credit for Invoke AI go to the Invoke AI Team. The code in this repository is not owned or endorsed by anyone but the author.
-
-
 Copyright 2025 Sebastian Schmittner
+
+The Docker files/scripts in this repository is not endorsed by anyone but the author.
+
+The Invoke AI container bundles [InvokeAI](https://github.com/invoke-ai/InvokeAI), which ships under the [Apache 2 License](https://github.com/invoke-ai/InvokeAI/blob/main/LICENSE). All credit for Invoke AI go to the Invoke AI Team. 
+
+The ComfyUI Container contains [ComfyUI](https://github.com/comfyanonymous/ComfyUI) which ships under [GPLv3](https://github.com/comfyanonymous/ComfyUI/blob/master/LICENSE). All credits go to the ComfyUI team.
+
 
 <a href="https://opensource.org/license/mit">
 <img alt="Open Source Initiative Approved License" height="200" src="https://opensource.org/wp-content/themes/osi/assets/img/osi-badge-light.svg" />
