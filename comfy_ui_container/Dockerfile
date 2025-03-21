@@ -20,20 +20,14 @@ RUN apt-get update -y && \
         libsm6 \
         libxext6
 
-# mount one external volume and link dirs there in
-RUN for dir in models output custom_nodes; do \
-    rm -rf /opt/comfyui/$dir \
-    && mkdir -p ${MOUNT_DIR}/$dir \
-    && ln -s ${MOUNT_DIR}/$dir /opt/comfyui/$dir
-
 
 RUN git clone https://github.com/comfyanonymous/ComfyUI.git /opt/comfyui && \
     cd /opt/comfyui && \
-    git checkout tags/${COMFY_UI_VERSION}}
+    git checkout tags/${COMFY_UI_VERSION}
 
 RUN git clone https://github.com/ltdrdata/ComfyUI-Manager.git /opt/comfyui-manager && \
     cd /opt/comfyui-manager && \
-    git checkout tags/${COMFY_UI_MANAGER_VERSION}}
+    git checkout tags/${COMFY_UI_MANAGER_VERSION}
 
 RUN pip install \
     --requirement /opt/comfyui/requirements.txt \
@@ -41,6 +35,13 @@ RUN pip install \
 
 WORKDIR /opt/comfyui
 
+
+# mount one external volume and link dirs there in
+RUN for dir in models output custom_nodes; do \
+    rm -rf /opt/comfyui/$dir \
+    && mkdir -p ${MOUNT_DIR}/$dir \
+    && ln -s ${MOUNT_DIR}/$dir /opt/comfyui/ \
+    ; done
 
 EXPOSE 8188
 
