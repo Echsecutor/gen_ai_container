@@ -9,7 +9,7 @@
 
 This is a minimalist container running invoke web UI. No nonsense included. Just starts the invoke web ui and exposes the port.
 
-- [You can run this image on runpod](https://runpod.io/console/deploy?template=elr3w646vn&ref=c71blwtm)
+- [Run this ComfyUI Container on runpod](https://runpod.io/console/deploy?template=elr3w646vn&ref=c71blwtm)
 - See https://www.invoke.com/ for Invoke AI Details
   - This container is not created by/endorsed by invoke.
   - I have just turned the installation manual at https://invoke-ai.github.io/InvokeAI/installation/manual/#walkthrough into a Dockerfile.
@@ -49,7 +49,16 @@ docker run --gpus device=0 --rm -it --name invoke -p 8080:8080 -v YOUR_LOCAL_MOD
 ```
 
 
-## Invoke AI Container
+## Comfy UI Container
+
+- [Run on Runpod](https://runpod.io/console/deploy?template=7si05wcrgv&ref=c71blwtm)
+- [See the Comfy UI Docs for how to use Comfy UI](https://docs.comfy.org/tutorials/basic/text-to-image)
+
+
+### Config
+
+- Models, custom nodes, outputs,... in short everything you might want to persist is stored in the volume mounted under `/workspace`
+
 
 
 # License
