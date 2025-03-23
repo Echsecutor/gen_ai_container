@@ -9,8 +9,8 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  INVOKE_IMAGE_NAME: ${{ github.repository }}
-  COMFY_IMAGE_NAME: ${{ github.repository }}-comfy
+  INVOKE_IMAGE_NAME: ${{ github.repository }}/invoke
+  COMFY_IMAGE_NAME: ${{ github.repository }}/comfy
 
 jobs:
   workflow_setup:
