@@ -37,7 +37,7 @@ WORKDIR /opt/comfyui
 
 
 # mount one external volume and link dirs there in
-RUN for dir in models output custom_nodes; do \
+RUN for dir in models output custom_nodes user; do \
     rm -rf /opt/comfyui/$dir \
     && mkdir -p ${MOUNT_DIR}/$dir \
     && ln -s ${MOUNT_DIR}/$dir /opt/comfyui/ \

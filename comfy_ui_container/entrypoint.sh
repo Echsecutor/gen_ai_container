@@ -7,6 +7,7 @@ echo "Creating directories for models..."
 mkdir -p "$(readlink -f /opt/comfyui/models)"
 mkdir -p "$(readlink -f /opt/comfyui/output)"
 mkdir -p "$(readlink -f /opt/comfyui/custom_nodes)"
+mkdir -p "$(readlink -f /opt/comfyui/user)"
 
 MODEL_DIRECTORIES=(
     "checkpoints"
