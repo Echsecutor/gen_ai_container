@@ -2,7 +2,7 @@
 
 
 # This image is based on the latest official PyTorch image, because it already contains CUDA, CuDNN, and PyTorch
-FROM pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime
+FROM pytorch/pytorch:2.6.0-cuda12.6-cudnn9-runtime
 
 ARG COMFY_UI_VERSION=v0.3.26
 ARG COMFY_UI_MANAGER_VERSION=3.31.6
