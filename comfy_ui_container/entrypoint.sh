@@ -40,6 +40,9 @@ ln -s \
     /opt/comfyui-manager \
     /opt/comfyui/custom_nodes/ComfyUI-Manager
 
+echo "Updating compfy UI requirements..."
+pip install -r /opt/comfyui/requirements.txt
+
 # The custom nodes that were installed using the ComfyUI Manager may have requirements of their own, which are not installed when the container is
 # started for the first time; this loops over all custom nodes and installs the requirements of each custom node
 echo "Installing requirements for custom nodes..."
@@ -56,6 +59,8 @@ do
         fi
     fi
 done
+
+
 
 # Under normal circumstances, the container would be run as the root user, which is not ideal, because the files that are created by the container in
 # the volumes mounted from the host, i.e., custom nodes and models downloaded by the ComfyUI Manager, are owned by the root user; the user can specify
