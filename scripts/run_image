@@ -1,0 +1,21 @@
+#!/bin/bash
+
+run_image(){
+  MOUNT_FOLDER="/mnt/IV_AI_Shared/$CONTAINER_NAME"
+  mkdir -p "$MOUNT_FOLDER"
+  
+  docker container stop "$CONTAINER_NAME" || true
+  docker container rm   "$CONTAINER_NAME" || true
+  
+  docker run \
+    --name  "$CONTAINER_NAME" \
+    --detach \
+    --restart unless-stopped \
+    --env USER_ID="$(id -u)" \
+    --env GROUP_ID="$(id -g)" \
+    --volume "${MOUNT_FOLDER}:/workspace" \
+    --publish "$PUBLISH" \
+    --gpus $GPUS \
+    $IMAGE
+
+}

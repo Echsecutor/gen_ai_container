@@ -33,11 +33,10 @@ This is a minimalist container running invoke web UI. No nonsense included. Just
 
 ### Container Build
 
-- This repository contains [a script](./invoke_ai_container/install_invoke_ai.sh) version of the manual found at 
+- This repository contains [a script](./scripts/install_invoke_ai.sh) version of the manual found at 
 https://invoke-ai.github.io/InvokeAI/installation/manual/
 to install invoke ai into a fresh ubuntu image.
-
-- This script [is applied to create a container image](./invoke_ai_container/Dockerfile).
+- This script [was transformed into a Dockerfile](./invoke_ai_container/Dockerfile)
 
 ### Usage
 
@@ -45,9 +44,10 @@ Run locally:
 - Be sure to have nvidia stuff installed: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html
 
 ```
-docker run --gpus device=0 --rm -it --name invoke -p 8080:8080 -v YOUR_LOCAL_MODEL_DIR:/workspace ghcr.io/echsecutor/invoke_ai_container:latest
+docker run --gpus all --rm -it --name invoke -p 8080:8080 -v YOUR_LOCAL_MODEL_DIR:/workspace ghcr.io/echsecutor/gen_ai_container/invoke:main
 ```
 
+[Or use the provided script](./scripts/run_invoke_ai)
 
 ## Comfy UI Container
 
@@ -59,6 +59,16 @@ docker run --gpus device=0 --rm -it --name invoke -p 8080:8080 -v YOUR_LOCAL_MOD
 
 - Models, custom nodes, outputs,... in short everything you might want to persist is stored in the volume mounted under `/workspace`
 
+### Usage
+
+Run locally:
+- Be sure to have nvidia stuff installed: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html
+
+```
+docker run --gpus all --rm -it --name invoke -p 8080:8080 -v YOUR_LOCAL_MODEL_DIR:/workspace ghcr.io/echsecutor/gen_ai_container/comfy:main
+```
+
+[Or just use the provided script](./scripts/run_comfy)
 
 
 # License

@@ -1,0 +1,10 @@
+#!/bin/bash
+
+. ./run_image
+
+CONTAINER_NAME=comfyui
+IMAGE=ghcr.io/echsecutor/gen_ai_container/comfy:main
+GPUS="0"
+PUBLISH="8188:8188"
+
+run_image

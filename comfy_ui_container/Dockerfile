@@ -16,6 +16,7 @@ RUN apt-get update -y && \
     apt-get install -y \
         git \
         sudo \
+        wget \
         ffmpeg \
         libsm6 \
         libxext6

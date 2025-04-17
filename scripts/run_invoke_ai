@@ -1,0 +1,10 @@
+#!/bin/bash
+
+. ./run_image
+
+CONTAINER_NAME=invokeai
+IMAGE=ghcr.io/echsecutor/gen_ai_container/invoke:main
+PUBLISH="8080:8080"
+GPUS="1"
+
+run_image
