@@ -4,8 +4,8 @@
 # This image is based on the latest official PyTorch image, because it already contains CUDA, CuDNN, and PyTorch
 FROM pytorch/pytorch:2.6.0-cuda12.6-cudnn9-runtime
 
-ARG COMFY_UI_VERSION=v0.3.26
-ARG COMFY_UI_MANAGER_VERSION=3.31.6
+ARG COMFY_UI_VERSION=v0.3.34
+ARG COMFY_UI_MANAGER_VERSION=3.32.2
 ARG MOUNT_DIR=/workspace
 
 # Apt should not ask for user input
@@ -19,7 +19,8 @@ RUN apt-get update -y && \
         wget \
         ffmpeg \
         libsm6 \
-        libxext6
+        libxext6 \
+        build-essential
 
 
 RUN git clone https://github.com/comfyanonymous/ComfyUI.git /opt/comfyui && \
