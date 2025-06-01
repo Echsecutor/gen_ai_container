@@ -4,6 +4,8 @@
 if [ "$(which syncthing)" ] && [ -n "${SYNCTHING_GUI_ADDRESS}" ] && [ -n "${SYNCTHING_DIR}" ] && [ "${RUN_SYNCTHING}" = "true" ]; then
     echo "Starting Syncthing on ${SYNCTHING_GUI_ADDRESS} with home directory ${SYNCTHING_DIR}"
     nohup syncthing --gui-address=${SYNCTHING_GUI_ADDRESS} --home=${SYNCTHING_DIR} &
+else
+    echo "Syncthing is disabled"
 fi
 
 # Creates the directories for the models inside of the volume that is mounted from the host
