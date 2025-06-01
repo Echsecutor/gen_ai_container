@@ -71,7 +71,8 @@ jobs:
         id: push
         uses: docker/build-push-action@v6
         with:
-          context: ./invoke_ai_container/
+          context: .
+          file: ./invoke_ai.Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -126,7 +127,8 @@ jobs:
         id: push
         uses: docker/build-push-action@v6
         with:
-          context: ./comfy_ui_container/
+          context: .
+          file: ./comfy.Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

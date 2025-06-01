@@ -47,7 +47,7 @@ RUN for dir in models output custom_nodes user; do \
 
 EXPOSE 8188
 
-ADD entrypoint.sh /entrypoint.sh
+ADD comfy_entrypoint.sh /entrypoint.sh
 ENTRYPOINT ["/bin/bash", "/entrypoint.sh"]
 
 VOLUME ["${MOUNT_DIR}"]

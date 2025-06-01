@@ -1,7 +1,11 @@
+# syntax = edrevo/dockerfile-plus
+
 FROM ubuntu:latest
 
-# might have better driver setup, but container gets to large for github pipeline
-#FROM nvcr.io/nvidia/pytorch:22.08-py3
+INCLUDE+ install_syncthing.Dockerfile
+
+# Apt should not ask for user input
+ENV DEBIAN_FRONTEND=noninteractive
 
 
 ARG INVOKE_AI_VERSION=5.7.1
@@ -22,8 +26,7 @@ ARG INVOKE_AI_PROFILES_DIR=${MOUNT_DIR}/profiles
 
 ARG INVOKE_AI_VENV="$INVOKE_AI_DIR/.venv"
 
-RUN export DEBIAN_FRONTEND=noninteractive && \
-    apt-get update -y && \
+RUN apt-get update -y && \
     apt-get install software-properties-common -y && \
     add-apt-repository ppa:deadsnakes/ppa -y && \
     apt-get update -y && \
