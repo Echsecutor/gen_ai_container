@@ -5,7 +5,11 @@ set -e
 
 echo "INVOKE_AI_VENV=${INVOKE_AI_VENV:="/invoke/.venv"}"
 
-./run_syncthing.sh
+if [ -f "/run_syncthing.sh" ]; then
+    /run_syncthing.sh
+else
+    echo "Error: /run_syncthing.sh not found"
+fi
 
 . "$HOME/.local/bin/env"
 

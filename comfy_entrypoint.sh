@@ -1,7 +1,12 @@
 #!/bin/bash
 
 
-./run_syncthing.sh
+if [ -f "/run_syncthing.sh" ]; then
+    /run_syncthing.sh
+else
+    echo "Error: /run_syncthing.sh not found"
+fi
+
 
 # Creates the directories for the models inside of the volume that is mounted from the host
 echo "Creating directories for models..."
