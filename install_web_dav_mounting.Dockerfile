@@ -3,7 +3,7 @@ ENV DAV_USER=
 ENV DAV_PASSWORD=
 
 RUN apt-get update -y \
-    && apt-get install davfs2 -y
+    && apt-get install davfs2 -y \
     && apt-get clean -y
 
 
