@@ -20,7 +20,7 @@ RUN if [ -n "${SYNCTHING_DIR}" ]; then \
     && curl -s https://syncthing.net/release-key.txt | apt-key add - \
     && echo "deb https://apt.syncthing.net/ syncthing release" | tee /etc/apt/sources.list.d/syncthing.list \
     && apt-get update -y \
-    && apt-get install syncthing -y 
+    && apt-get install syncthing -y \
     ; fi
 
 COPY run_syncthing.sh /run_syncthing.sh
