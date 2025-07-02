@@ -6,5 +6,5 @@ RUN apt-get update -y \
     && apt-get install davfs2 -y 
 
 
-COPY mount_web_dav.sh /run_web_dav_mounting.sh
-RUN chmod +x /run_web_dav_mounting.sh
+COPY mount_web_dav.sh /mount_web_dav.sh
+RUN chmod +x /mount_web_dav.sh
