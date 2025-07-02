@@ -26,7 +26,8 @@ RUN apt-get update -y && \
         ffmpeg \
         libsm6 \
         libxext6 \
-        build-essential
+        build-essential \
+    && apt-get clean -y
 
 
 RUN git clone https://github.com/comfyanonymous/ComfyUI.git /opt/comfyui && \
