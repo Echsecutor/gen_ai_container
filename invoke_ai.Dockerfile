@@ -2,10 +2,12 @@
 
 FROM ubuntu:latest
 
-INCLUDE+ install_syncthing.Dockerfile
-
 # Apt should not ask for user input
 ENV DEBIAN_FRONTEND=noninteractive
+
+
+INCLUDE+ install_syncthing.Dockerfile
+INCLUDE+ install_web_dav_mounting.Dockerfile
 
 
 ARG INVOKE_AI_VERSION=5.7.1
@@ -16,6 +18,8 @@ ARG INVOKE_AI_PACKAGE_SPECIFIER=invokeai
 ARG INVOKE_AI_DIR=/invoke
 
 ARG MOUNT_DIR=/workspace
+ENV MOUNT_DIR=${MOUNT_DIR}
+
 ARG INVOKE_AI_MODELS_DIR=${MOUNT_DIR}/models
 ARG INVOKE_AI_DB_DIR=${MOUNT_DIR}/db
 ARG INVOKE_AI_OUTPUT_DIR=${MOUNT_DIR}/output

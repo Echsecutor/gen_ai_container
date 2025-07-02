@@ -7,6 +7,12 @@ else
     echo "Error: /run_syncthing.sh not found"
 fi
 
+if [ -f "/mount_web_dav.sh" ]; then
+    /mount_web_dav.sh
+else
+    echo "Error: /mount_web_dav.sh not found"
+fi
+
 
 # Creates the directories for the models inside of the volume that is mounted from the host
 echo "Creating directories for models..."

@@ -1,15 +1,21 @@
-# This Dockerfile is derived from https://github.com/lecode-official/comfyui-docker/blob/main/Dockerfile licensed under the MIT License https://github.com/lecode-official/comfyui-docker/blob/main/LICENSE
+# syntax = edrevo/dockerfile-plus
 
 
 # This image is based on the latest official PyTorch image, because it already contains CUDA, CuDNN, and PyTorch
 FROM pytorch/pytorch:2.6.0-cuda12.6-cudnn9-runtime
 
+# Apt should not ask for user input
+ENV DEBIAN_FRONTEND=noninteractive
+
+INCLUDE+ install_syncthing.Dockerfile
+INCLUDE+ install_web_dav_mounting.Dockerfile
+
+
 ARG COMFY_UI_VERSION=v0.3.34
 ARG COMFY_UI_MANAGER_VERSION=3.32.2
 ARG MOUNT_DIR=/workspace
+ENV MOUNT_DIR=${MOUNT_DIR}
 
-# Apt should not ask for user input
-ENV DEBIAN_FRONTEND=noninteractive
 
 # Added ffmpeg + libs for video generation
 RUN apt-get update -y && \

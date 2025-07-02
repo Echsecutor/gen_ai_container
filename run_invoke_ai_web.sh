@@ -11,6 +11,12 @@ else
     echo "Error: /run_syncthing.sh not found"
 fi
 
+if [ -f "/mount_web_dav.sh" ]; then
+    /mount_web_dav.sh
+else
+    echo "Error: /mount_web_dav.sh not found"
+fi
+
 . "$HOME/.local/bin/env"
 
 . "$INVOKE_AI_VENV/bin/activate"
