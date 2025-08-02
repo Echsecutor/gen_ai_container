@@ -1,0 +1,3 @@
+civit_model_loader/.venv
+civit_model_loader/__pycache__
+civit_model_loader/tests/test_config.py

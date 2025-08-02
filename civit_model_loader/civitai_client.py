@@ -1,0 +1,99 @@
+import requests
+from typing import List, Dict, Any, Optional
+from models import CivitaiModel, CivitaiModelVersion, SearchRequest
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+class CivitaiClient:
+    BASE_URL = "https://civitai.com/api/v1"
+
+    def __init__(self, api_token: Optional[str] = None):
+        self.api_token = api_token
+        self.session = requests.Session()
+        if api_token:
+            self.session.headers.update(
+                {"Authorization": f"Bearer {api_token}"})
+
+    def search_models(self, search_request: SearchRequest) -> Dict[str, Any]:
+        """Search for models using the Civitai API"""
+        params = {
+            "limit": search_request.limit,
+            "sort": search_request.sort,
+            "period": search_request.period
+        }
+
+        # CivitAI API doesn't allow 'page' parameter when using 'query'
+        # For query searches, use cursor-based pagination instead
+        if search_request.query:
+            params["query"] = search_request.query
+            # Use cursor-based pagination for query searches
+            if search_request.cursor:
+                params["cursor"] = search_request.cursor
+            # Don't include page parameter for query searches
+        else:
+            # Only include page parameter for non-query searches
+            params["page"] = search_request.page
+
+        if search_request.types:
+            params["types"] = [t.value for t in search_request.types]
+
+        if search_request.nsfw is not None:
+            params["nsfw"] = search_request.nsfw
+
+        try:
+            response = self.session.get(
+                f"{self.BASE_URL}/models", params=params)
+            response.raise_for_status()
+            return response.json()
+        except requests.RequestException as e:
+            logger.error(f"Error searching models: {e}")
+            raise
+
+    def get_model(self, model_id: int) -> Dict[str, Any]:
+        """Get detailed information about a specific model"""
+        try:
+            response = self.session.get(f"{self.BASE_URL}/models/{model_id}")
+            response.raise_for_status()
+            return response.json()
+        except requests.RequestException as e:
+            logger.error(f"Error fetching model {model_id}: {e}")
+            raise
+
+    def get_model_version(self, version_id: int) -> Dict[str, Any]:
+        """Get detailed information about a specific model version"""
+        try:
+            response = self.session.get(
+                f"{self.BASE_URL}/model-versions/{version_id}")
+            response.raise_for_status()
+            return response.json()
+        except requests.RequestException as e:
+            logger.error(f"Error fetching model version {version_id}: {e}")
+            raise
+
+    def get_download_url(self, model_id: int, version_id: int, file_id: int) -> str:
+        """Get the download URL for a specific model file"""
+        # The download URL is typically provided in the model version details
+        # For direct download, we use the file's downloadUrl from the model data
+        version_data = self.get_model_version(version_id)
+
+        for file_info in version_data.get("files", []):
+            if file_info["id"] == file_id:
+                return file_info["downloadUrl"]
+
+        raise ValueError(f"File {file_id} not found in version {version_id}")
+
+    def download_file_stream(self, download_url: str, api_token: Optional[str] = None):
+        """Download a file and return the streaming response"""
+        headers = {}
+        if api_token:
+            headers["Authorization"] = f"Bearer {api_token}"
+
+        try:
+            response = requests.get(download_url, headers=headers, stream=True)
+            response.raise_for_status()
+            return response
+        except requests.RequestException as e:
+            logger.error(f"Error downloading file from {download_url}: {e}")
+            raise

@@ -1,0 +1,26 @@
+version: "3.8"
+
+services:
+  civit-model-loader:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - ${MODEL_DIR:-./models}:/workspace/models
+    environment:
+      - MOUNT_DIR=/workspace
+      - PORT=8080
+    restart: unless-stopped
+    container_name: civit-model-loader
+
+    # Optional: Add health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  models:
+    driver: local

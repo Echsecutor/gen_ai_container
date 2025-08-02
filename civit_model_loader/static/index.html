@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Civitai Model Loader</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>🤖 Civitai Model Loader</h1>
+            <p>Discover and download AI models from Civitai</p>
+        </header>
+
+        <div class="main-content">
+            <!-- API Token Section -->
+            <section class="token-section">
+                <h2>API Configuration</h2>
+
+                <!-- Token loaded state (hidden by default) -->
+                <div id="tokenLoadedState" class="token-loaded-group" style="display: none;">
+                    <div class="token-status">
+                        <span class="checkmark">✓</span>
+                        <span class="token-status-text">Token loaded successfully</span>
+                    </div>
+                    <div class="token-actions">
+                        <button id="changeToken" class="secondary-btn">Change Token</button>
+                        <button id="testTokenLoaded">Test Token</button>
+                    </div>
+                </div>
+
+                <!-- Token input state (visible by default) -->
+                <div id="tokenInputState" class="token-input-group">
+                    <input type="password" id="apiToken" placeholder="Enter your Civitai API token">
+                    <button id="saveToken">Save Token</button>
+                    <button id="testToken">Test Token</button>
+                </div>
+
+                <p class="token-help">
+                    Get your API token from <a href="https://civitai.com/user/account" target="_blank">Civitai Account
+                        Settings</a>
+                </p>
+            </section>
+
+            <!-- Search Section -->
+            <section class="search-section">
+                <h2>Search Models</h2>
+                <div class="search-form">
+                    <div class="search-row">
+                        <input type="text" id="searchQuery" placeholder="Search for models...">
+                        <button id="searchBtn">Search</button>
+                    </div>
+                    <div class="filter-row">
+                        <select id="modelType">
+                            <option value="">All Types</option>
+                            <option value="Checkpoint">Checkpoint</option>
+                            <option value="LORA">LORA</option>
+                            <option value="LyCORIS">LyCORIS</option>
+                            <option value="TextualInversion">Textual Inversion</option>
+                            <option value="Controlnet">ControlNet</option>
+                            <option value="VAE">VAE</option>
+                            <option value="Upscaler">Upscaler</option>
+                        </select>
+                        <select id="sortBy">
+                            <option value="Most Downloaded">Most Downloaded</option>
+                            <option value="Most Liked">Most Liked</option>
+                            <option value="Newest">Newest</option>
+                            <option value="Most Commented">Most Commented</option>
+                        </select>
+                        <label>
+                            <input type="checkbox" id="nsfwFilter">
+                            Include NSFW
+                        </label>
+                    </div>
+                </div>
+
+                <div id="searchResults" class="search-results">
+                    <!-- Search results will be populated here -->
+                </div>
+
+                <div id="pagination" class="pagination">
+                    <!-- Pagination controls will be added here -->
+                </div>
+            </section>
+
+            <!-- Download Queue Section -->
+            <section class="queue-section">
+                <h2>Download Queue</h2>
+                <div id="downloadQueue" class="download-queue">
+                    <!-- Download items will be populated here -->
+                </div>
+            </section>
+
+            <!-- Downloaded Models Section -->
+            <section class="downloaded-section">
+                <h2>Downloaded Models</h2>
+                <div class="downloaded-controls">
+                    <button id="refreshDownloaded">Refresh</button>
+                    <button id="exportConfig">Export Config</button>
+                    <input type="file" id="importConfig" accept=".json" style="display: none;">
+                    <button id="importConfigBtn">Import Config</button>
+                </div>
+                <div id="downloadedModels" class="downloaded-models">
+                    <!-- Downloaded models will be populated here -->
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- Modal for model details -->
+    <div id="modelModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div id="modelDetails">
+                <!-- Model details will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast notifications -->
+    <div id="toast" class="toast"></div>
+
+    <script src="/static/app.js"></script>
+</body>
+
+</html>
