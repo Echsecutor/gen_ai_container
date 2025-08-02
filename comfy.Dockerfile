@@ -7,9 +7,6 @@ FROM pytorch/pytorch:2.6.0-cuda12.6-cudnn9-runtime
 # Apt should not ask for user input
 ENV DEBIAN_FRONTEND=noninteractive
 
-INCLUDE+ install_syncthing.Dockerfile
-INCLUDE+ install_web_dav_mounting.Dockerfile
-
 
 ARG COMFY_UI_VERSION=v0.3.34
 ARG COMFY_UI_MANAGER_VERSION=3.32.2

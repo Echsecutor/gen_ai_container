@@ -1,21 +1,16 @@
-# syntax = edrevo/dockerfile-plus
+# CUDA version
+#FROM ghcr.io/invoke-ai/invokeai
 
-FROM ubuntu:latest
+# For the ROCM version for AMD GPUs use:
+FROM ghcr.io/invoke-ai/invokeai:main-rocm
 
 # Apt should not ask for user input
 ENV DEBIAN_FRONTEND=noninteractive
 
-
-INCLUDE+ install_syncthing.Dockerfile
-INCLUDE+ install_web_dav_mounting.Dockerfile
-
-
-ARG INVOKE_AI_VERSION=5.7.1
-ARG INVOKE_AI_SCHEMA_VERSION=4.0.2
 ARG INVOKE_AI_PORT=8080
 
-ARG INVOKE_AI_PACKAGE_SPECIFIER=invokeai
-ARG INVOKE_AI_DIR=/invoke
+ARG INVOKE_AI_DIR=/invokeai
+ENV INVOKE_AI_DIR=${INVOKE_AI_DIR}
 
 ARG MOUNT_DIR=/workspace
 ENV MOUNT_DIR=${MOUNT_DIR}
@@ -28,29 +23,12 @@ ARG INVOKE_AI_STYLES_DIR=${MOUNT_DIR}/styles
 ARG INVOKE_AI_PROFILES_DIR=${MOUNT_DIR}/profiles
 
 
-ARG INVOKE_AI_VENV="$INVOKE_AI_DIR/.venv"
-
-RUN apt-get update -y && \
-    apt-get install software-properties-common -y && \
-    add-apt-repository ppa:deadsnakes/ppa -y && \
-    apt-get update -y && \
-    apt-get install python3.11 build-essential python3-opencv libopencv-dev curl -y && \
-    apt-get autoremove -y && \
-    apt-get clean -y
-
 RUN mkdir -p "${INVOKE_AI_DIR}"
 
 WORKDIR $INVOKE_AI_DIR
 
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
-    . "$HOME/.local/bin/env" && \
-    uv venv --relocatable --prompt invoke --python 3.11 --python-preference only-managed "$INVOKE_AI_VENV" && \
-    . "$INVOKE_AI_VENV/bin/activate" && \
-    uv pip install "${INVOKE_AI_PACKAGE_SPECIFIER}"~="${INVOKE_AI_VERSION}" --python 3.11 --python-preference only-managed --force-reinstall && \
-    uv pip install pypatchmatch
 
-RUN echo "schema_version: ${INVOKE_AI_SCHEMA_VERSION}" >>"${INVOKE_AI_DIR}"/invokeai.yaml && \
-    echo "host: 0.0.0.0" >>"${INVOKE_AI_DIR}"/invokeai.yaml && \
+RUN echo "host: 0.0.0.0" >>"${INVOKE_AI_DIR}"/invokeai.yaml && \
     echo "port: ${INVOKE_AI_PORT}" >>"${INVOKE_AI_DIR}"/invokeai.yaml && \
     echo "hashing_algorithm: 'sha256'" >>"${INVOKE_AI_DIR}"/invokeai.yaml && \
     echo "models_dir: ${INVOKE_AI_MODELS_DIR}" >>"${INVOKE_AI_DIR}"/invokeai.yaml && \
@@ -64,13 +42,14 @@ RUN echo "schema_version: ${INVOKE_AI_SCHEMA_VERSION}" >>"${INVOKE_AI_DIR}"/invo
     echo "profiles_dir: ${INVOKE_AI_PROFILES_DIR}" >>"${INVOKE_AI_DIR}"/invokeai.yaml && \
     echo "enable_partial_loading: true">>"${INVOKE_AI_DIR}"/invokeai.yaml
 
-
-
 COPY run_invoke_ai_web.sh /
 
 RUN mkdir -p "${MOUNT_DIR}"
 
 EXPOSE $INVOKE_AI_PORT
 VOLUME ["${MOUNT_DIR}"]
+
+CMD ["invokeai-web"]
+
 
 ENTRYPOINT ["/run_invoke_ai_web.sh"]
