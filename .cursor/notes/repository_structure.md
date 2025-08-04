@@ -37,7 +37,7 @@ Docker container project for AI/ML tools, specifically InvokeAI and ComfyUI with
 
 ### Configuration Files
 
-- `run_invoke_ai_web.sh` - Web service startup
+- `run_invoke_ai_web.sh` - Web service startup with PID tracking and signal forwarding
 - `invokeai.yaml` - InvokeAI configuration example
 - Various model config files in `configs/` subdirectories
 
@@ -52,4 +52,4 @@ Docker container project for AI/ML tools, specifically InvokeAI and ComfyUI with
 - **InvokeAI**: Port 8080 (no login)
 - **ComfyUI**: Port 8080
 - **SSH**: Port 22 for file transfers
-- **Model Loader**: TBD (will be implemented)
+- **Model Loader**: Port 8081 (configurable via CIVIT_MODEL_LOADER_PORT)

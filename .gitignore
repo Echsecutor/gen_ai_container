@@ -1,3 +1,4 @@
 civit_model_loader/.venv
 civit_model_loader/__pycache__
 civit_model_loader/tests/test_config.py
+civit_model_loader/dev_mount_dir/

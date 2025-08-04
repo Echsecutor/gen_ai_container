@@ -52,6 +52,7 @@ Complete frontend + backend implementation for downloading AI models from Civita
 - Downloaded models history in localStorage
 - Re-download previously downloaded models
 - Export/import configuration as JSON
+- NSFW preference storage and restoration across sessions
 
 ### User Interface
 
@@ -59,6 +60,12 @@ Complete frontend + backend implementation for downloading AI models from Civita
 - Toast notifications for user feedback
 - Modal dialogs for model details
 - Progress bars for download status
+- **Image Display System**:
+  - Preview images in model cards (search results)
+  - Full image galleries in detailed model view
+  - Image modal for full-size viewing
+  - Error handling for missing/broken images
+  - Responsive image grids for different screen sizes
 
 ## API Endpoints
 
@@ -91,7 +98,13 @@ Complete frontend + backend implementation for downloading AI models from Civita
 ### Environment Variables
 
 - `MOUNT_DIR` - Model storage directory (default: `/workspace`)
-- `PORT` - Service port (default: 8080)
+- `PORT` - Service port (default: 8080, also configurable via command line)
+
+### Command Line Arguments
+
+- `--port` - Service port (default: 8080 or PORT environment variable)
+  - Example usage: `python main.py --port 3000`
+  - Falls back to PORT environment variable or 8080 if not specified
 
 ### Volume Mounting
 
@@ -160,9 +173,22 @@ The start script handles:
   - Frontend now properly sends token in request body
 
 - **Token UI State Not Persisting**: Fixed checkmark disappearing on page reload
+
   - Enhanced token loading logic in `loadStoredData()` function
   - Improved UI state management for token loaded vs input states
   - Added proper DOM element checking and error handling
+
+- **Missing loadDownloadedModels Function**: Fixed "Uncaught ReferenceError: loadDownloadedModels is not defined"
+
+  - Added missing `loadDownloadedModels()` function that calls `displayDownloadedModels()`
+  - Function is attached to "Refresh" button in Downloaded Models section
+  - Enables users to refresh the displayed list of downloaded models
+
+- **NSFW Preference Storage**: Added persistent storage for NSFW filter setting
+  - NSFW checkbox state now saves automatically to localStorage when changed
+  - Preference restored on page reload/next visit
+  - Included in export/import configuration functionality
+  - Uses `civitai_nsfw_preference` localStorage key
 
 ### API Token Testing
 
@@ -176,3 +202,60 @@ The start script handles:
   - Graceful fallback with warning if config file missing
   - No sensitive data in tracked git files
 - **Configuration**: `test_config.py` added to `.gitignore` to prevent token commits
+
+## Image Display Implementation
+
+### Technical Details
+
+- **Data Source**: Images retrieved from `model.modelVersions[].images[].url` via CivitAI API
+- **Preview Logic**: Shows first image from first model version in search cards
+- **Gallery Logic**: Displays all images from all model versions in detailed view as thumbnails
+- **Error Handling**: Uses `onerror` attribute to hide broken image containers
+- **Modal System**: Dynamic modal creation with click-to-view functionality
+- **Responsive Design**: Grid layouts adapt to screen size with mobile optimization
+
+### UI Improvements
+
+- **Enlarged Modal**: Increased modal size to 1200px max-width for better content display
+- **Thumbnail Gallery**: Images display as 120px thumbnails instead of full-size (150px grid)
+- **Lightbox Experience**: Click thumbnails to view full-size images in overlay modal
+- **Visual Indicators**: Hover effects with magnifying glass icon and border highlights
+- **Mobile Responsive**: Smaller thumbnails (100px) and optimized spacing on mobile devices
+- **Modal Interaction**: Full modal closing support (X button, outside click, Escape key)
+
+### HTML Sanitization for Model Descriptions
+
+- **Security-focused HTML sanitization**: Added `sanitizeHtml()` function to safely render HTML content in model descriptions
+- **Allowed HTML tags**: Supports safe formatting tags (p, br, strong, b, em, i, u, h1-h6, ul, ol, li, blockquote, code, pre, span, div, a, img)
+- **Attribute filtering**: Only allows safe attributes like href (http/https only), src (http/https/data: only), style (basic CSS), alt, width, height
+- **XSS protection**: Removes dangerous HTML elements and attributes while preserving safe formatting
+- **Applied to all description areas**: Search results (with smart truncation), version descriptions, and modal descriptions
+- **Smart truncation**: For search results, strips HTML tags for length calculation, then applies sanitization to preserve formatting
+
+### UI Bug Fixes
+
+- **Pagination Button Visibility**: Fixed white-on-white pagination buttons by adding proper text color (#4a5568) to ensure visibility against white background
+- **Pagination Search Error**: Fixed "Unprocessable Entity" error when clicking Next/Previous buttons by:
+  - Adding missing `api_token` field to search requests
+  - Refactoring pagination logic to use stored search request (`currentSearch`) instead of rebuilding from form fields
+  - Created `performSearchWithRequest()` function to avoid form field mismatches during pagination
+  - Fixed pagination for query searches by detecting cursor-based vs page-based pagination and implementing cursor-based navigation
+  - Added `setupCursorPagination()` function with Next/Previous buttons for query searches
+  - Implemented cursor storage and navigation logic for query result pagination
+- **Checkpoint Pagination Issues**: Fixed page-based pagination problems:
+  - Reset `currentPage = 1` for new searches to prevent starting from wrong page numbers
+  - Fixed search request to always start from page 1 for new searches (not previous page)
+  - Improved pagination consistency between new searches and page navigation
+  - Added debugging logs to track pagination request/response data
+- **Frontend Data Robustness**: Fixed multiple frontend crashes from malformed API data:
+  - Added optional chaining (`model.creator?.username`) for safe property access
+  - Fallback to "Unknown" when creator or username is undefined
+  - Added null checking for `model.modelVersions` arrays in model details display
+  - Added try-catch error handling around search results rendering
+  - Safe array access with `(model.modelVersions || [])` to prevent undefined errors
+  - Applied fixes to both search results display and model details modal
+- **Combined Search Pagination**: Fixed pagination issues when combining text search with type filters:
+  - Enhanced debugging for combined searches (text + type filter)
+  - Improved cursor navigation with better user feedback and error handling
+  - Clear metadata and cursor state when starting new searches to prevent conflicts
+  - Better pagination info display showing both query and type filter information

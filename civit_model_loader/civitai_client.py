@@ -37,7 +37,9 @@ class CivitaiClient:
             params["page"] = search_request.page
 
         if search_request.types:
-            params["types"] = [t.value for t in search_request.types]
+            # Handle both string and ModelType enum values
+            params["types"] = [t.value if hasattr(
+                t, 'value') else t for t in search_request.types]
 
         if search_request.nsfw is not None:
             params["nsfw"] = search_request.nsfw

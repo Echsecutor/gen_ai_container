@@ -17,6 +17,7 @@ This is a Docker container project for AI/ML tools, specifically focused on Invo
 ### Components
 
 - [`civit_model_loader.md`](civit_model_loader.md) - Complete implementation of Civitai model loader (frontend+backend)
+- [`script_improvements.md`](script_improvements.md) - Process management and PID tracking enhancements
 
 ## Key Components
 

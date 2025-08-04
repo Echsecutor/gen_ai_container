@@ -40,6 +40,11 @@ function setupEventListeners() {
       if (e.key === "Enter") performSearch();
     });
 
+  // NSFW preference
+  document
+    .getElementById("nsfwFilter")
+    .addEventListener("change", saveNsfwPreference);
+
   // Downloaded models
   document
     .getElementById("refreshDownloaded")
@@ -74,6 +79,12 @@ function loadStoredData() {
     showTokenLoaded();
   } else {
     showTokenInput();
+  }
+
+  // Load NSFW preference
+  const storedNsfw = localStorage.getItem("civitai_nsfw_preference");
+  if (storedNsfw !== null) {
+    document.getElementById("nsfwFilter").checked = JSON.parse(storedNsfw);
   }
 
   // Load downloaded models history
@@ -160,23 +171,7 @@ async function testApiToken() {
 }
 
 // Search Functions
-async function performSearch() {
-  const query = document.getElementById("searchQuery").value.trim();
-  const modelType = document.getElementById("modelType").value;
-  const sortBy = document.getElementById("sortBy").value;
-  const includeNsfw = document.getElementById("nsfwFilter").checked;
-
-  const searchRequest = {
-    query: query || null,
-    types: modelType ? [modelType] : null,
-    sort: sortBy,
-    nsfw: includeNsfw || null,
-    limit: 20,
-    page: currentPage,
-  };
-
-  currentSearch = searchRequest;
-
+async function performSearchWithRequest(searchRequest) {
   try {
     showLoading("searchResults");
 
@@ -193,6 +188,10 @@ async function performSearch() {
     }
 
     const results = await response.json();
+
+    // Store metadata globally for cursor-based pagination
+    window.lastSearchMetadata = results.metadata;
+
     displaySearchResults(results);
     setupPagination(results.metadata);
   } catch (error) {
@@ -201,6 +200,33 @@ async function performSearch() {
     document.getElementById("searchResults").innerHTML =
       "<p>Search failed. Please try again.</p>";
   }
+}
+
+async function performSearch() {
+  // Reset to first page for new searches
+  currentPage = 1;
+
+  const query = document.getElementById("searchQuery").value.trim();
+  const modelType = document.getElementById("modelType").value;
+  const sortBy = document.getElementById("sortBy").value;
+  const includeNsfw = document.getElementById("nsfwFilter").checked;
+
+  const searchRequest = {
+    query: query || null,
+    types: modelType ? [modelType] : null,
+    sort: sortBy,
+    nsfw: includeNsfw ? true : null, // Only send true or null, not false
+    limit: 20,
+    page: 1, // Always start from page 1 for new searches
+    cursor: null, // Always start from beginning for new searches
+    api_token: apiToken || null,
+  };
+
+  // Clear any stored metadata from previous searches
+  window.lastSearchMetadata = null;
+
+  currentSearch = searchRequest;
+  await performSearchWithRequest(searchRequest);
 }
 
 function displaySearchResults(results) {
@@ -212,30 +238,75 @@ function displaySearchResults(results) {
     return;
   }
 
-  container.innerHTML = results.items
-    .map(
-      (model) => `
+  try {
+    container.innerHTML = results.items
+      .map((model) => {
+        // Get the first image from the first model version as preview
+        let previewImageUrl = null;
+        if (model.modelVersions && model.modelVersions.length > 0) {
+          const firstVersion = model.modelVersions[0];
+          if (firstVersion.images && firstVersion.images.length > 0) {
+            previewImageUrl = firstVersion.images[0].url;
+          }
+        }
+
+        return `
         <div class="model-card" onclick="showModelDetails(${model.id})">
-            <h3>${escapeHtml(model.name)}</h3>
-            <p>${escapeHtml(
-              model.description || "No description available"
-            ).substring(0, 150)}${
-        (model.description || "").length > 150 ? "..." : ""
-      }</p>
-            <div class="model-meta">
-                <span class="model-type">${escapeHtml(model.type)}</span>
-                <span>by ${escapeHtml(model.creator.username)}</span>
+            ${
+              previewImageUrl
+                ? `
+            <div class="model-image-preview">
+                <img src="${escapeHtml(previewImageUrl)}" 
+                     alt="${escapeHtml(model.name)}" 
+                     onerror="this.parentElement.style.display='none'">
+            </div>
+            `
+                : ""
+            }
+            <div class="model-content">
+                <h3>${escapeHtml(model.name)}</h3>
+                <p>${(() => {
+                  const desc = model.description || "No description available";
+                  const textOnly = desc.replace(/<[^>]*>/g, ""); // Strip HTML for length check
+                  const truncated =
+                    textOnly.length > 150
+                      ? textOnly.substring(0, 150) + "..."
+                      : desc;
+                  return sanitizeHtml(truncated);
+                })()}</p>
+                <div class="model-meta">
+                    <span class="model-type">${escapeHtml(model.type)}</span>
+                    <span>by ${escapeHtml(
+                      model.creator?.username || "Unknown"
+                    )}</span>
+                </div>
             </div>
         </div>
-    `
-    )
-    .join("");
+      `;
+      })
+      .join("");
+  } catch (error) {
+    console.error("Error displaying search results:", error);
+    container.innerHTML =
+      "<p>Error displaying search results. Please try again.</p>";
+  }
 }
 
 function setupPagination(metadata) {
   const container = document.getElementById("pagination");
-  const totalPages = metadata.totalPages;
-  const currentPageNum = metadata.currentPage;
+
+  // Check if this is a query search (cursor-based pagination)
+  // Query searches don't have currentPage/totalPages, they use cursor
+  const isQuerySearch = currentSearch && currentSearch.query;
+
+  if (isQuerySearch) {
+    // For query searches, use cursor-based pagination
+    setupCursorPagination(metadata, container);
+    return;
+  }
+
+  const totalPages = metadata.totalPages || 1;
+  const currentPageNum = metadata.currentPage || 1;
 
   if (totalPages <= 1) {
     container.innerHTML = "";
@@ -267,10 +338,68 @@ function setupPagination(metadata) {
   container.innerHTML = paginationHtml;
 }
 
+function setupCursorPagination(metadata, container) {
+  let paginationHtml = "";
+
+  // Previous button (if we have a previous cursor or this isn't the first page)
+  const hasPrevious = currentSearch.cursor || (metadata && metadata.prevCursor);
+  paginationHtml += `<button onclick="changeCursor('prev')" ${
+    !hasPrevious ? "disabled" : ""
+  }>Previous</button>`;
+
+  // Show current position info with query details
+  const queryInfo = currentSearch.query || "";
+  const typeInfo =
+    currentSearch.types && currentSearch.types.length > 0
+      ? ` (${currentSearch.types.join(", ")})`
+      : "";
+  paginationHtml += `<span style="margin: 0 15px; color: #666;">Search results${
+    queryInfo ? ` for "${queryInfo}"` : ""
+  }${typeInfo}</span>`;
+
+  // Next button (if metadata indicates more results)
+  const hasNext = metadata && (metadata.nextCursor || metadata.nextPage);
+  paginationHtml += `<button onclick="changeCursor('next')" ${
+    !hasNext ? "disabled" : ""
+  }>Next</button>`;
+
+  container.innerHTML = paginationHtml;
+}
+
+function changeCursor(direction) {
+  if (!currentSearch) return;
+
+  // For cursor-based pagination, we need to get the nextCursor from the last response
+  if (direction === "next") {
+    const lastMetadata = window.lastSearchMetadata;
+    if (lastMetadata && lastMetadata.nextCursor) {
+      currentSearch.cursor = lastMetadata.nextCursor;
+    } else {
+      showToast("No more results available", "warning");
+      return;
+    }
+  } else if (direction === "prev") {
+    // For previous, remove the cursor to go back to the beginning
+    // In a full implementation, we'd maintain a cursor history stack
+    currentSearch.cursor = null;
+  }
+
+  performSearchWithRequest(currentSearch);
+}
+
 function changePage(page) {
-  currentPage = page;
+  // Ensure page is a valid number
+  const pageNum = parseInt(page);
+  if (isNaN(pageNum) || pageNum < 1) {
+    console.error("Invalid page number:", page);
+    return;
+  }
+
+  currentPage = pageNum;
   if (currentSearch) {
-    performSearch();
+    // Update the page in the stored search request and perform search
+    currentSearch.page = pageNum;
+    performSearchWithRequest(currentSearch);
   }
 }
 
@@ -298,12 +427,62 @@ async function showModelDetails(modelId) {
 function displayModelDetails(model) {
   const container = document.getElementById("modelDetails");
 
-  const versionsHtml = model.modelVersions
+  // Collect all images from all versions
+  const allImages = [];
+  if (model.modelVersions && Array.isArray(model.modelVersions)) {
+    model.modelVersions.forEach((version) => {
+      if (version.images && version.images.length > 0) {
+        version.images.forEach((image) => {
+          allImages.push({
+            ...image,
+            versionName: version.name,
+          });
+        });
+      }
+    });
+  }
+
+  const imagesHtml =
+    allImages.length > 0
+      ? `
+    <div class="model-images-section">
+      <h3>Model Images</h3>
+      <div class="model-images-grid">
+        ${allImages
+          .map(
+            (image) => `
+          <div class="model-image-item">
+            <img src="${escapeHtml(image.url)}" 
+                 alt="${escapeHtml(model.name)} - ${escapeHtml(
+              image.versionName
+            )}"
+                 onclick="openImageModal('${escapeHtml(
+                   image.url
+                 )}', '${escapeHtml(model.name)}')"
+                 onerror="this.parentElement.style.display='none'">
+            <div class="image-info">
+              <small>${escapeHtml(image.versionName)}</small>
+              ${
+                image.width && image.height
+                  ? `<small>${image.width}×${image.height}</small>`
+                  : ""
+              }
+            </div>
+          </div>
+        `
+          )
+          .join("")}
+      </div>
+    </div>
+  `
+      : "";
+
+  const versionsHtml = (model.modelVersions || [])
     .map(
       (version) => `
         <div class="version-section">
             <h4>${escapeHtml(version.name)}</h4>
-            <p>${escapeHtml(version.description || "No description")}</p>
+            <p>${sanitizeHtml(version.description || "No description")}</p>
             <div class="version-files">
                 ${version.files
                   .map(
@@ -333,15 +512,59 @@ function displayModelDetails(model) {
   container.innerHTML = `
         <h2>${escapeHtml(model.name)}</h2>
         <p><strong>Type:</strong> ${escapeHtml(model.type)}</p>
-        <p><strong>Creator:</strong> ${escapeHtml(model.creator.username)}</p>
-        <p><strong>Description:</strong> ${escapeHtml(
+        <p><strong>Creator:</strong> ${escapeHtml(
+          model.creator?.username || "Unknown"
+        )}</p>
+        <p><strong>Description:</strong> ${sanitizeHtml(
           model.description || "No description available"
         )}</p>
+        ${imagesHtml}
         <div class="model-versions">
             <h3>Available Versions</h3>
             ${versionsHtml}
         </div>
     `;
+}
+
+// Image Modal Functions
+function openImageModal(imageUrl, modelName) {
+  const modal = document.getElementById("imageModal") || createImageModal();
+  const modalImage = modal.querySelector("#modalImage");
+  const modalCaption = modal.querySelector("#modalCaption");
+
+  modalImage.src = imageUrl;
+  modalCaption.textContent = modelName;
+  modal.style.display = "block";
+}
+
+function createImageModal() {
+  const modal = document.createElement("div");
+  modal.id = "imageModal";
+  modal.className = "image-modal";
+  modal.innerHTML = `
+    <div class="image-modal-content">
+      <span class="image-modal-close" onclick="closeImageModal()">&times;</span>
+      <img id="modalImage" class="modal-image">
+      <div id="modalCaption" class="modal-caption"></div>
+    </div>
+  `;
+
+  // Close modal when clicking outside the image
+  modal.onclick = function (event) {
+    if (event.target === modal) {
+      closeImageModal();
+    }
+  };
+
+  document.body.appendChild(modal);
+  return modal;
+}
+
+function closeImageModal() {
+  const modal = document.getElementById("imageModal");
+  if (modal) {
+    modal.style.display = "none";
+  }
 }
 
 // Download Functions
@@ -512,11 +735,25 @@ function redownloadModel(modelId, versionId, fileId, filename) {
   downloadModel(modelId, versionId, fileId, filename);
 }
 
+function loadDownloadedModels() {
+  displayDownloadedModels();
+}
+
+function saveNsfwPreference() {
+  const nsfwCheckbox = document.getElementById("nsfwFilter");
+  localStorage.setItem(
+    "civitai_nsfw_preference",
+    JSON.stringify(nsfwCheckbox.checked)
+  );
+}
+
 // Configuration Export/Import
 function exportConfiguration() {
+  const nsfwCheckbox = document.getElementById("nsfwFilter");
   const config = {
     api_token: apiToken,
     downloaded_models: downloadedModels,
+    nsfw_preference: nsfwCheckbox.checked,
   };
 
   const blob = new Blob([JSON.stringify(config, null, 2)], {
@@ -557,6 +794,14 @@ function importConfiguration(event) {
           JSON.stringify(downloadedModels)
         );
         displayDownloadedModels();
+      }
+
+      if (config.nsfw_preference !== undefined) {
+        document.getElementById("nsfwFilter").checked = config.nsfw_preference;
+        localStorage.setItem(
+          "civitai_nsfw_preference",
+          JSON.stringify(config.nsfw_preference)
+        );
       }
 
       showToast("Configuration imported successfully", "success");
@@ -608,6 +853,106 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
+function sanitizeHtml(html) {
+  if (!html) return "";
+
+  // Create a temporary DOM element to parse the HTML
+  const temp = document.createElement("div");
+  temp.innerHTML = html;
+
+  // Define allowed tags and their allowed attributes
+  const allowedTags = {
+    p: [],
+    br: [],
+    strong: [],
+    b: [],
+    em: [],
+    i: [],
+    u: [],
+    h1: [],
+    h2: [],
+    h3: [],
+    h4: [],
+    h5: [],
+    h6: [],
+    ul: [],
+    ol: [],
+    li: [],
+    blockquote: [],
+    code: [],
+    pre: [],
+    span: ["style"],
+    div: ["style"],
+    a: ["href", "target"],
+    img: ["src", "alt", "width", "height"],
+  };
+
+  // Recursively sanitize elements
+  function sanitizeElement(element) {
+    const tagName = element.tagName.toLowerCase();
+
+    // If tag is not allowed, replace with its text content
+    if (!allowedTags.hasOwnProperty(tagName)) {
+      return document.createTextNode(element.textContent || "");
+    }
+
+    // Create a new clean element
+    const cleanElement = document.createElement(tagName);
+
+    // Copy allowed attributes
+    const allowedAttrs = allowedTags[tagName];
+    for (let attr of element.attributes) {
+      if (allowedAttrs.includes(attr.name.toLowerCase())) {
+        // Additional validation for specific attributes
+        if (attr.name.toLowerCase() === "href") {
+          // Only allow http/https links
+          if (attr.value.match(/^https?:\/\//)) {
+            cleanElement.setAttribute(attr.name, attr.value);
+          }
+        } else if (attr.name.toLowerCase() === "src") {
+          // Only allow http/https/data images
+          if (attr.value.match(/^(https?:\/\/|data:image\/)/)) {
+            cleanElement.setAttribute(attr.name, attr.value);
+          }
+        } else if (attr.name.toLowerCase() === "style") {
+          // Basic style sanitization - only allow safe CSS properties
+          const safeStyle = attr.value.replace(/[^a-zA-Z0-9\s:;.\-#%()]/g, "");
+          if (safeStyle) {
+            cleanElement.setAttribute(attr.name, safeStyle);
+          }
+        } else {
+          cleanElement.setAttribute(attr.name, attr.value);
+        }
+      }
+    }
+
+    // Recursively process child nodes
+    for (let child of element.childNodes) {
+      if (child.nodeType === Node.TEXT_NODE) {
+        cleanElement.appendChild(document.createTextNode(child.textContent));
+      } else if (child.nodeType === Node.ELEMENT_NODE) {
+        const sanitizedChild = sanitizeElement(child);
+        cleanElement.appendChild(sanitizedChild);
+      }
+    }
+
+    return cleanElement;
+  }
+
+  // Process all child elements
+  const result = document.createElement("div");
+  for (let child of temp.childNodes) {
+    if (child.nodeType === Node.TEXT_NODE) {
+      result.appendChild(document.createTextNode(child.textContent));
+    } else if (child.nodeType === Node.ELEMENT_NODE) {
+      const sanitizedChild = sanitizeElement(child);
+      result.appendChild(sanitizedChild);
+    }
+  }
+
+  return result.innerHTML;
+}
+
 function formatFileSize(bytes) {
   if (!bytes) return "0 B";
   const sizes = ["B", "KB", "MB", "GB", "TB"];
@@ -615,7 +960,47 @@ function formatFileSize(bytes) {
   return (bytes / Math.pow(1024, i)).toFixed(1) + " " + sizes[i];
 }
 
+// Modal closing functionality
+function closeModelModal() {
+  const modal = document.getElementById("modelModal");
+  if (modal) {
+    modal.style.display = "none";
+  }
+}
+
+// Set up modal event listeners when page loads
+function setupModalEventListeners() {
+  const modal = document.getElementById("modelModal");
+  const closeBtn = modal.querySelector(".close");
+
+  // Close button click
+  if (closeBtn) {
+    closeBtn.onclick = function () {
+      closeModelModal();
+    };
+  }
+
+  // Click outside modal content
+  modal.onclick = function (event) {
+    if (event.target === modal) {
+      closeModelModal();
+    }
+  };
+
+  // Escape key to close modal
+  document.addEventListener("keydown", function (event) {
+    if (event.key === "Escape" && modal.style.display === "block") {
+      closeModelModal();
+    }
+  });
+}
+
 // Clean up when page is unloaded
 window.addEventListener("beforeunload", function () {
   stopDownloadPolling();
+});
+
+// Initialize modal event listeners when page loads
+window.addEventListener("DOMContentLoaded", function () {
+  setupModalEventListeners();
 });

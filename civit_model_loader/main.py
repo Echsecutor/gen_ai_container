@@ -1,5 +1,6 @@
 import os
 import logging
+import argparse
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, FileResponse
@@ -117,5 +118,17 @@ async def health_check():
 
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.getenv("PORT", 8080))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+
+    # Setup command line argument parsing
+    parser = argparse.ArgumentParser(
+        description="Civitai Model Loader Service")
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=int(os.getenv("PORT", 8080)),
+        help="Port to run the service on (default: 8080 or PORT environment variable)"
+    )
+
+    args = parser.parse_args()
+
+    uvicorn.run(app, host="0.0.0.0", port=args.port)
