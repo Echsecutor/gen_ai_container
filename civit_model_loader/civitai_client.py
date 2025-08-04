@@ -1,4 +1,7 @@
 import requests
+import aiohttp
+import aiofiles
+import asyncio
 from typing import List, Dict, Any, Optional
 from models import CivitaiModel, CivitaiModelVersion, SearchRequest
 import logging
@@ -97,5 +100,42 @@ class CivitaiClient:
             response.raise_for_status()
             return response
         except requests.RequestException as e:
+            logger.error(f"Error downloading file from {download_url}: {e}")
+            raise
+
+    async def download_file_async(self, download_url: str, file_path: str,
+                                  progress_callback=None, api_token: Optional[str] = None):
+        """Download a file asynchronously with progress tracking"""
+        headers = {}
+        if api_token:
+            headers["Authorization"] = f"Bearer {api_token}"
+
+        timeout = aiohttp.ClientTimeout(total=None, connect=30)
+
+        try:
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.get(download_url, headers=headers) as response:
+                    response.raise_for_status()
+
+                    total_size = int(response.headers.get('content-length', 0))
+                    downloaded_size = 0
+
+                    # Use aiofiles for async file writing
+                    async with aiofiles.open(file_path, 'wb') as f:
+                        async for chunk in response.content.iter_chunked(8192):
+                            await f.write(chunk)
+                            downloaded_size += len(chunk)
+
+                            # Call progress callback if provided
+                            if progress_callback:
+                                progress_callback(downloaded_size, total_size)
+
+                            # Yield control periodically to avoid blocking
+                            if downloaded_size % (8192 * 10) == 0:  # Every ~80KB
+                                await asyncio.sleep(0.001)
+
+                    return downloaded_size
+
+        except (aiohttp.ClientError, asyncio.TimeoutError) as e:
             logger.error(f"Error downloading file from {download_url}: {e}")
             raise

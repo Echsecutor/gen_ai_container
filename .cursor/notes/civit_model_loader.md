@@ -114,7 +114,7 @@ Complete frontend + backend implementation for downloading AI models from Civita
 
 ## Dependencies
 
-- **Backend**: FastAPI, uvicorn, requests, pydantic, aiofiles
+- **Backend**: FastAPI, uvicorn, requests, pydantic, aiofiles, aiohttp
 - **Frontend**: Vanilla JavaScript (no external dependencies)
 
 ## Usage
@@ -259,3 +259,19 @@ The start script handles:
   - Improved cursor navigation with better user feedback and error handling
   - Clear metadata and cursor state when starting new searches to prevent conflicts
   - Better pagination info display showing both query and type filter information
+
+### Performance and Threading Fixes
+
+- **UI Responsiveness During Downloads**: Fixed blocking UI during active downloads
+  - **Root Cause**: Synchronous file I/O and HTTP operations in async context were blocking FastAPI event loop
+  - **Solution**: Replaced synchronous operations with true async I/O:
+    - Added `aiohttp` dependency for async HTTP streaming
+    - Added `download_file_async()` method to CivitaiClient using aiohttp and aiofiles
+    - Updated download_manager to use async file operations instead of synchronous ones
+    - Added periodic `await asyncio.sleep()` calls to yield control during downloads
+  - **Result**: Download progress now updates in real-time while UI remains responsive
+  - **Technical Details**:
+    - Uses `aiohttp.ClientSession` for non-blocking HTTP requests
+    - Uses `aiofiles.open()` for non-blocking file I/O
+    - Progress callback updates download status without blocking event loop
+    - Downloads now truly run in background tasks without affecting API responsiveness

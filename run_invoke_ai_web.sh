@@ -23,6 +23,12 @@ cleanup() {
 # Set up signal traps to forward signals to child processes
 trap cleanup SIGTERM SIGINT SIGQUIT
 
+echo "Running web interface for InvokeAI in ${INVOKE_AI_DIR}"
+nohup invokeai-web --root "${INVOKE_AI_DIR}" >>"${LOG_FILE}" 2>&1 &
+INVOKE_PID=$!
+PIDS+=("$INVOKE_PID")
+echo "Started InvokeAI web interface with PID: $INVOKE_PID"
+
 echo "Running Civitai Model Loader on port ${CIVIT_MODEL_LOADER_PORT:=8081}"
 
 python3 -m venv $HOME/venv
@@ -38,12 +44,6 @@ echo "Started Civitai Model Loader with PID: $CIVIT_PID"
 popd
 
 deactivate
-
-echo "Running web interface for InvokeAI in ${INVOKE_AI_DIR}"
-nohup invokeai-web --root "${INVOKE_AI_DIR}" >>"${LOG_FILE}" 2>&1 &
-INVOKE_PID=$!
-PIDS+=("$INVOKE_PID")
-echo "Started InvokeAI web interface with PID: $INVOKE_PID"
 
 echo "All services started. PIDs: ${PIDS[*]}"
 echo "Use Ctrl+C to stop all services gracefully"

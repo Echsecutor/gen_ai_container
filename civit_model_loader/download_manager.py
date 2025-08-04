@@ -80,21 +80,23 @@ class DownloadManager:
             file_path = self.models_dir / download_info.filename
             download_info.file_path = str(file_path)
 
-            # Download with progress tracking
-            response = client.download_file_stream(
-                download_url, request.api_token)
+            # Progress callback to update download info
+            def progress_callback(downloaded_size: int, total_size: int):
+                download_info.downloaded_size = downloaded_size
+                if total_size > 0:
+                    download_info.progress = downloaded_size / total_size * 100
+                else:
+                    # Fallback to original total_size if content-length not available
+                    if download_info.total_size:
+                        download_info.progress = downloaded_size / download_info.total_size * 100
 
-            downloaded_size = 0
-            with open(file_path, 'wb') as f:
-                for chunk in response.iter_content(chunk_size=8192):
-                    if chunk:
-                        f.write(chunk)
-                        downloaded_size += len(chunk)
-
-                        # Update progress
-                        download_info.downloaded_size = downloaded_size
-                        if download_info.total_size:
-                            download_info.progress = downloaded_size / download_info.total_size * 100
+            # Download with async I/O - this won't block the event loop
+            await client.download_file_async(
+                download_url,
+                str(file_path),
+                progress_callback=progress_callback,
+                api_token=request.api_token
+            )
 
             download_info.status = DownloadStatus.COMPLETED
             download_info.progress = 100.0
