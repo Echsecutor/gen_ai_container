@@ -19,9 +19,18 @@ Complete frontend + backend implementation for downloading AI models from Civita
 
 - **Location**: `civit_model_loader/static/`
 - **Files**:
-  - `index.html` - Main UI structure
+  - `index.html` - Main UI structure (updated for ESM imports)
   - `styles.css` - Complete styling with responsive design
-  - `app.js` - Full client-side functionality
+  - `app.js` - Main application orchestrator (modular ESM version)
+- **Modular JavaScript Structure**: `civit_model_loader/static/js/`
+  - `utils.js` - Utility functions (escapeHtml, sanitizeHtml, formatters, etc.)
+  - `ui.js` - UI components (modals, toasts, progress bars, loading states)
+  - `state.js` - Global state management and localStorage persistence
+  - `api.js` - Backend API client with error handling and retry logic
+  - `search.js` - Search functionality and pagination management
+  - `models.js` - Model details display and interaction
+  - `download.js` - Download operations and queue management
+  - `config.js` - Configuration import/export functionality
 
 ## Key Features Implemented
 
@@ -53,6 +62,11 @@ Complete frontend + backend implementation for downloading AI models from Civita
 - Re-download previously downloaded models
 - Export/import configuration as JSON
 - NSFW preference storage and restoration across sessions
+- **File Existence Verification**: Backend checks if downloaded model files actually exist on disk
+  - Real-time file existence status displayed in Downloaded Models section
+  - Visual indicators: ✅ for existing files, ❌ for missing files
+  - Missing files highlighted with red border and background
+  - Tooltip shows full file path for verification
 
 ### User Interface
 
@@ -81,6 +95,10 @@ Complete frontend + backend implementation for downloading AI models from Civita
 - `GET /api/downloads` - Get all download statuses
 - `GET /api/downloads/{id}` - Get specific download status
 - `DELETE /api/downloads/{id}` - Cancel download
+
+### File Management
+
+- `POST /api/check-files` - Check if downloaded model files exist on disk
 
 ### Utility
 
@@ -259,6 +277,24 @@ The start script handles:
   - Improved cursor navigation with better user feedback and error handling
   - Clear metadata and cursor state when starting new searches to prevent conflicts
   - Better pagination info display showing both query and type filter information
+- **Downloaded Models Layout**: Fixed header overflow and layout inconsistencies:
+  - Changed grid layout from `auto-fill, minmax(250px, 1fr)` to `repeat(3, 1fr)` for consistent 3-column layout
+  - Added proper text wrapping for long filenames using `word-wrap: break-word`, `word-break: break-all`, and `overflow-wrap: break-word`
+  - Headers now break at any character to prevent overflow instead of only breaking at hyphens
+  - Layout now matches Search Models section with fixed 3-column grid
+- **Downloaded Models Images**: Added image previews to downloaded model cards:
+  - Enhanced `downloadModel()` function to accept and store `imageUrl` parameter
+  - Modified `modelInfo` data structure to include `imageUrl` field for persistence
+  - Updated download button calls in model details to pass preview image URL (first image from first version)
+  - Enhanced `displayDownloadedModels()` function to show image previews similar to search results
+  - Added CSS styling for downloaded model cards matching search model card design
+  - Images include hover effects, error handling, and responsive design
+  - Downloaded models now have visual consistency with search results
+- **Downloaded Models Deduplication**: Prevented duplicate entries when re-downloading models:
+  - Modified `downloadModel()` function to check for existing entries using `modelId + versionId + fileId` combination
+  - Re-downloading an existing model now updates the existing entry instead of creating duplicates
+  - Updated timestamp reflects the most recent download attempt
+  - Each unique model file appears only once in the downloaded models list
 
 ### Performance and Threading Fixes
 
@@ -275,3 +311,48 @@ The start script handles:
     - Uses `aiofiles.open()` for non-blocking file I/O
     - Progress callback updates download status without blocking event loop
     - Downloads now truly run in background tasks without affecting API responsiveness
+
+## Frontend Refactoring to Modular ESM Structure
+
+### Architecture Transformation (December 2024)
+
+- **Problem**: The original `app.js` had grown to 1060+ lines with significant code duplication and tight coupling
+- **Solution**: Complete refactoring into modular ESM (ES6 modules) structure with functional separation
+
+### Modular Structure Benefits
+
+- **Separation of Concerns**: Each module has a single responsibility (state, UI, API, search, etc.)
+- **Code Deduplication**: Eliminated duplicate modal handlers, error handling, and UI patterns
+- **Maintainability**: Smaller, focused modules are easier to understand and modify
+- **Testability**: Individual modules can be tested in isolation
+- **Performance**: Tree-shaking enables smaller bundle sizes in production
+- **Developer Experience**: Better IDE support with explicit imports/exports
+
+### Module Dependencies
+
+```
+app.js (main orchestrator)
+├── ui.js (modal manager, toasts, progress bars)
+├── state.js (global state, localStorage)
+├── api.js (backend communication)
+├── search.js (search functionality, pagination)
+├── models.js (model details, display)
+├── download.js (download management)
+├── config.js (import/export)
+└── utils.js (shared utilities)
+```
+
+### Backward Compatibility
+
+- Global function access preserved for onclick handlers (`window.showModelDetails`, etc.)
+- Existing HTML structure unchanged (only script tag updated to `type="module"`)
+- All original functionality maintained while improving code organization
+- State management centralized but accessible through both module exports and global app instance
+
+### Key Improvements
+
+- **Error Handling**: Centralized with `withErrorHandler` wrapper function
+- **Modal Management**: Unified modal system with registration and lifecycle management
+- **State Persistence**: Consolidated localStorage operations in state module
+- **API Client**: Robust retry logic and batch operations support
+- **UI Components**: Reusable progress bars, loading states, and notification system

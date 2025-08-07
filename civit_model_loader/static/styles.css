@@ -342,26 +342,95 @@ section h2 {
 
 .downloaded-models {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 15px;
 }
 
 .downloaded-model {
-  padding: 15px;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
-  background: #f8f9fa;
+  padding: 0;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: white;
+}
+
+.downloaded-model:hover {
+  border-color: #667eea;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+}
+
+.downloaded-model .model-content {
+  padding: 15px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .downloaded-model h4 {
   margin-bottom: 8px;
   color: #2d3748;
+  word-wrap: break-word;
+  word-break: break-all;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  font-size: 1.1rem;
 }
 
 .downloaded-model p {
   font-size: 0.9rem;
   color: #666;
   margin-bottom: 5px;
+  line-height: 1.4;
+}
+
+.downloaded-model button {
+  margin-top: auto;
+}
+
+.downloaded-model .model-image-preview {
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+  background: #f8f9fa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.downloaded-model .model-image-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.downloaded-model:hover .model-image-preview img {
+  transform: scale(1.05);
+}
+
+/* File existence status styles */
+.file-exists {
+  color: #10b981;
+  font-weight: 500;
+}
+
+.file-missing {
+  color: #ef4444;
+  font-weight: 500;
+}
+
+.downloaded-model.missing-file {
+  border-color: #ef4444;
+  background: #fef2f2;
+}
+
+.downloaded-model.missing-file:hover {
+  border-color: #dc2626;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
 }
 
 /* Pagination */

@@ -1,0 +1,16 @@
+curl 'https://26d21ec3u9oj7k-9090.proxy.runpod.net/api/v2/models/scan_folder?scan_path=%2Fworkspace%2Fmodels' \
+  -H 'accept: */*' \
+  -H 'accept-language: en-US,en;q=0.9,de;q=0.8' \
+  -H 'priority: u=1, i' \
+  -H 'referer: https://26d21ec3u9oj7k-9090.proxy.runpod.net/' \
+  -H 'sec-ch-ua: "Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"' \
+  -H 'sec-ch-ua-mobile: ?0' \
+  -H 'sec-ch-ua-platform: "Linux"' \
+  -H 'sec-fetch-dest: empty' \
+  -H 'sec-fetch-mode: cors' \
+  -H 'sec-fetch-site: same-origin' \
+  -H 'user-agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36'
+
+
+  [{"path":"/workspace/models/loxsSoulsMixPrisma_PRISMAV30.safetensors","is_installed":true},{"path":"/workspace/models/Guin-IllustX-000009.safetensors","is_installed":true},{"path":"/workspace/models/jibMixIllustrious_v20Revelation.safetensors","is_installed":true},{"path":"/workspace/models/sdxl/lora/Alien Style.safetensors","is_installed":true},{"path":"/workspace/models/TrendCraft_The_Peoples_Style_Detailer-v2.4I-5_18_2025-Illustrious.safetensors","is_installed":true},{"path":"/workspace/models/sdxl/vae/sdxl-vae-fp16-fix","is_installed":true}]
+  

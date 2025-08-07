@@ -1,0 +1,33 @@
+curl 'https://26d21ec3u9oj7k-9090.proxy.runpod.net/api/v1/model_relationships/i/2cde247d-7cbc-436f-8d63-cf1896feb02e' \
+  -H 'accept: */*' \
+  -H 'accept-language: en-US,en;q=0.9,de;q=0.8' \
+  -H 'priority: u=1, i' \
+  -H 'referer: https://26d21ec3u9oj7k-9090.proxy.runpod.net/' \
+  -H 'sec-ch-ua: "Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"' \
+  -H 'sec-ch-ua-mobile: ?0' \
+  -H 'sec-ch-ua-platform: "Linux"' \
+  -H 'sec-fetch-dest: empty' \
+  -H 'sec-fetch-mode: cors' \
+  -H 'sec-fetch-site: same-origin' \
+  -H 'user-agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36'
+
+  []
+
+  curl 'https://26d21ec3u9oj7k-9090.proxy.runpod.net/api/v2/models/i/2cde247d-7cbc-436f-8d63-cf1896feb02e' \
+  -X 'PATCH' \
+  -H 'accept: */*' \
+  -H 'accept-language: en-US,en;q=0.9,de;q=0.8' \
+  -H 'content-type: application/json' \
+  -H 'origin: https://26d21ec3u9oj7k-9090.proxy.runpod.net' \
+  -H 'priority: u=1, i' \
+  -H 'referer: https://26d21ec3u9oj7k-9090.proxy.runpod.net/' \
+  -H 'sec-ch-ua: "Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"' \
+  -H 'sec-ch-ua-mobile: ?0' \
+  -H 'sec-ch-ua-platform: "Linux"' \
+  -H 'sec-fetch-dest: empty' \
+  -H 'sec-fetch-mode: cors' \
+  -H 'sec-fetch-site: same-origin' \
+  -H 'user-agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36' \
+  --data-raw '{"trigger_phrases":["body harness,bondage outfit,cross pasties,"]}'
+
+  {"key":"2cde247d-7cbc-436f-8d63-cf1896feb02e","hash":"sha256:52e7ba5139e69b5af68b4c67e17c1328a4a1899cee82839492a822176cdfc035","path":"sdxl/lora/bodyharnessILL.safetensors","file_size":228454444,"name":"bodyharnessILL","type":"lora","format":"lycoris","base":"sdxl","source":"/workspace/models/bodyharnessILL.safetensors","source_type":"path","description":"sdxl lora model bodyharnessILL","source_api_response":null,"cover_image":null,"submodels":null,"usage_info":null,"trigger_phrases":["body harness,bondage outfit,cross pasties,"]}

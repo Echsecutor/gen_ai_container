@@ -5,7 +5,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, FileResponse
 from contextlib import asynccontextmanager
-from models import SearchRequest, DownloadRequest, DownloadInfo, ConfigExport
+from models import SearchRequest, DownloadRequest, DownloadInfo, ConfigExport, FileExistenceRequest, FileExistenceResponse, FileExistenceStatus
 from civitai_client import CivitaiClient
 from download_manager import DownloadManager
 
@@ -109,6 +109,34 @@ async def cancel_download(download_id: str):
         raise HTTPException(
             status_code=404, detail="Download not found or not active")
     return {"status": "cancelled"}
+
+
+@app.post("/api/check-files")
+async def check_file_existence(request: FileExistenceRequest):
+    """Check if downloaded model files actually exist on disk"""
+    try:
+        mount_dir = os.getenv("MOUNT_DIR", "/workspace")
+        models_dir = os.path.join(mount_dir, "models")
+
+        file_statuses = []
+
+        for file_info in request.files:
+            file_path = os.path.join(models_dir, file_info.filename)
+            exists = os.path.isfile(file_path)
+
+            file_statuses.append(FileExistenceStatus(
+                model_id=file_info.model_id,
+                version_id=file_info.version_id,
+                file_id=file_info.file_id,
+                filename=file_info.filename,
+                exists=exists,
+                file_path=file_path
+            ))
+
+        return FileExistenceResponse(files=file_statuses)
+    except Exception as e:
+        logger.error(f"File existence check error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/health")

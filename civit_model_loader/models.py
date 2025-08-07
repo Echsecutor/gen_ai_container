@@ -91,3 +91,27 @@ class DownloadInfo(BaseModel):
 class ConfigExport(BaseModel):
     api_token: str
     downloaded_models: List[Dict[str, Any]]
+
+
+class DownloadedModelFile(BaseModel):
+    model_id: int
+    version_id: int
+    file_id: int
+    filename: str
+
+
+class FileExistenceRequest(BaseModel):
+    files: List[DownloadedModelFile]
+
+
+class FileExistenceStatus(BaseModel):
+    model_id: int
+    version_id: int
+    file_id: int
+    filename: str
+    exists: bool
+    file_path: str
+
+
+class FileExistenceResponse(BaseModel):
+    files: List[FileExistenceStatus]
