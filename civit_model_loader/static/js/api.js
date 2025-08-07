@@ -208,6 +208,7 @@ export const healthCheck = withErrorHandler(async () => {
  * @returns {Promise<Object>} - Response with file existence status
  */
 export const checkFileExistence = withErrorHandler(async (files) => {
+  console.log("API: Sending file existence check request:", { files });
   return await apiClient.post("/api/check-files", {
     files: files,
   });

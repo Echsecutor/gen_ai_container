@@ -183,13 +183,37 @@ class DownloadManager {
     container.innerHTML = "<p>Checking file existence...</p>";
 
     try {
+      // Filter out models that don't have required fields
+      const validModels = downloadedModels.filter(
+        (model) => model.id && model.versionId && model.fileId && model.filename
+      );
+
+      if (validModels.length !== downloadedModels.length) {
+        console.warn(
+          `Filtered out ${
+            downloadedModels.length - validModels.length
+          } models with missing required fields`
+        );
+      }
+
       // Prepare file data for existence check
-      const files = downloadedModels.map((model) => ({
+      const files = validModels.map((model) => ({
         model_id: model.id,
         version_id: model.versionId,
         file_id: model.fileId,
         filename: model.filename,
       }));
+
+      console.log("Checking file existence for:", files);
+
+      // Skip API call if no files to check
+      if (files.length === 0) {
+        console.log("No files to check for existence");
+        container.innerHTML = downloadedModels
+          .map((model) => this.createDownloadedModelHtml(model))
+          .join("");
+        return;
+      }
 
       // Check file existence
       const response = await checkFileExistence(files);
@@ -271,9 +295,14 @@ class DownloadManager {
               <p><strong>Model ID:</strong> ${model.id}</p>
               <p><strong>Downloaded:</strong> ${downloadDate}</p>
               ${fileStatusHtml}
-              <button onclick="window.redownloadModel(${model.id}, ${model.versionId}, ${model.fileId}, '${safeFilename}', '${safeImageUrl}')">
-                  Re-download
-              </button>
+              <div class="model-actions">
+                  <button onclick="window.redownloadModel(${model.id}, ${model.versionId}, ${model.fileId}, '${safeFilename}', '${safeImageUrl}')" class="btn-primary">
+                      Re-download
+                  </button>
+                  <button onclick="window.removeDownloadedModel(${model.id}, ${model.versionId}, ${model.fileId})" class="btn-danger">
+                      Remove
+                  </button>
+              </div>
           </div>
       </div>
     `;
@@ -289,6 +318,33 @@ class DownloadManager {
    */
   async redownloadModel(modelId, versionId, fileId, filename, imageUrl = null) {
     return this.downloadModel(modelId, versionId, fileId, filename, imageUrl);
+  }
+
+  /**
+   * Removes a model from the downloaded models list
+   * @param {number} modelId - Model ID
+   * @param {number} versionId - Version ID
+   * @param {number} fileId - File ID
+   */
+  async removeDownloadedModel(modelId, versionId, fileId) {
+    try {
+      if (
+        confirm(
+          `Are you sure you want to remove this model from your downloaded models list? This will not delete the actual file.`
+        )
+      ) {
+        const { appState } = await import("./state.js");
+        appState.removeDownloadedModel(modelId, versionId, fileId);
+
+        // Refresh the display
+        await this.displayDownloadedModels();
+
+        showToast("Model removed from downloaded models list", "success");
+      }
+    } catch (error) {
+      console.error("Error removing downloaded model:", error);
+      showToast("Failed to remove model from list", "error");
+    }
   }
 
   /**
@@ -457,6 +513,10 @@ export function redownloadModel(
   );
 }
 
+export function removeDownloadedModel(modelId, versionId, fileId) {
+  return downloadManager.removeDownloadedModel(modelId, versionId, fileId);
+}
+
 export async function loadDownloadedModels() {
   return await downloadManager.loadDownloadedModels();
 }
@@ -476,4 +536,5 @@ export function stopDownloadPolling() {
 // Make functions available globally for onclick handlers
 window.downloadModel = downloadModel;
 window.redownloadModel = redownloadModel;
+window.removeDownloadedModel = removeDownloadedModel;
 window.cancelDownload = cancelDownload;

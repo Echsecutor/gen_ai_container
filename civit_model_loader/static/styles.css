@@ -557,6 +557,37 @@ button:disabled {
   transform: none;
 }
 
+/* Button variants */
+.btn-primary {
+  background: #667eea;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #5a6fd8;
+}
+
+.btn-danger {
+  background: #f56565;
+  color: white;
+}
+
+.btn-danger:hover {
+  background: #e53e3e;
+}
+
+/* Model actions layout */
+.model-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.model-actions button {
+  flex: 1;
+  min-width: 0;
+}
+
 /* Toast Notifications */
 .toast {
   position: fixed;
@@ -612,6 +643,10 @@ button:disabled {
 
   .downloaded-models {
     grid-template-columns: 1fr;
+  }
+
+  .model-actions {
+    flex-direction: column;
   }
 }
 

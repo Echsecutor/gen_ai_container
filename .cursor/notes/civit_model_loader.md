@@ -296,6 +296,31 @@ The start script handles:
   - Updated timestamp reflects the most recent download attempt
   - Each unique model file appears only once in the downloaded models list
 
+### JavaScript Syntax Fixes
+
+- **Async/Await Syntax Error**: Fixed JavaScript syntax error in `config.js`:
+
+  - `resetToDefaults()` method was using `await` without being declared as `async`
+  - Added `async` keyword to method declaration on line 177
+  - Updated exported `resetToDefaults()` function to be `async` and properly await the method call
+  - Resolved "Uncaught SyntaxError: Unexpected reserved word" error at config.js:181:30
+
+- **File Existence Check 422 Error**: Fixed API error when checking file existence after importing configuration:
+
+  - Added validation to filter out models with missing required fields before API call
+  - Added graceful handling of empty files array in both frontend and backend
+  - Added debugging logs to track file existence check requests
+  - Backend now returns empty response instead of error for empty files array
+  - Resolved "422 Unprocessable Entity" error when importing configuration with invalid model data
+
+- **Downloaded Models Management**: Added remove functionality for downloaded models list:
+  - Added "Remove" button next to "Re-download" button in downloaded models display
+  - Implemented `removeDownloadedModel()` function with confirmation dialog
+  - Added button styling with primary/danger variants for better UX
+  - Responsive layout for mobile devices (buttons stack vertically)
+  - Removes model from localStorage but doesn't delete actual file from disk
+  - Provides user feedback with toast notifications
+
 ### Performance and Threading Fixes
 
 - **UI Responsiveness During Downloads**: Fixed blocking UI during active downloads

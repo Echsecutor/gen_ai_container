@@ -33,7 +33,9 @@ class ConfigManager {
     }
 
     if (importInput) {
-      importInput.addEventListener("change", (event) => this.importConfig(event));
+      importInput.addEventListener("change", (event) =>
+        this.importConfig(event)
+      );
     }
   }
 
@@ -50,7 +52,9 @@ class ConfigManager {
 
       const a = document.createElement("a");
       a.href = url;
-      a.download = `civitai_config_${new Date().toISOString().split("T")[0]}.json`;
+      a.download = `civitai_config_${
+        new Date().toISOString().split("T")[0]
+      }.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -102,7 +106,10 @@ class ConfigManager {
     }
 
     // Validate API token if present
-    if (config.api_token !== undefined && typeof config.api_token !== "string") {
+    if (
+      config.api_token !== undefined &&
+      typeof config.api_token !== "string"
+    ) {
       throw new Error("Invalid API token format");
     }
 
@@ -111,7 +118,7 @@ class ConfigManager {
       if (!Array.isArray(config.downloaded_models)) {
         throw new Error("Downloaded models must be an array");
       }
-      
+
       config.downloaded_models.forEach((model, index) => {
         if (!model.id || !model.versionId || !model.fileId || !model.filename) {
           throw new Error(`Invalid model data at index ${index}`);
@@ -120,7 +127,10 @@ class ConfigManager {
     }
 
     // Validate NSFW preference if present
-    if (config.nsfw_preference !== undefined && typeof config.nsfw_preference !== "boolean") {
+    if (
+      config.nsfw_preference !== undefined &&
+      typeof config.nsfw_preference !== "boolean"
+    ) {
       throw new Error("NSFW preference must be a boolean");
     }
   }
@@ -137,7 +147,7 @@ class ConfigManager {
       // Refresh token UI state
       const { tokenUI } = await import("./ui.js");
       const { getApiToken } = await import("./state.js");
-      
+
       if (getApiToken()) {
         tokenUI.showTokenLoaded();
       } else {
@@ -175,8 +185,12 @@ class ConfigManager {
   /**
    * Resets configuration to defaults
    */
-  resetToDefaults() {
-    if (confirm("Are you sure you want to reset all settings to defaults? This cannot be undone.")) {
+  async resetToDefaults() {
+    if (
+      confirm(
+        "Are you sure you want to reset all settings to defaults? This cannot be undone."
+      )
+    ) {
       try {
         const { appState } = await import("./state.js");
         appState.clearAllData();
@@ -296,8 +310,8 @@ export function importConfig(event) {
   return configManager.importConfig(event);
 }
 
-export function resetToDefaults() {
-  return configManager.resetToDefaults();
+export async function resetToDefaults() {
+  return await configManager.resetToDefaults();
 }
 
 export function getConfigSummary() {

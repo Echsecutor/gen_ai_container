@@ -115,6 +115,13 @@ async def cancel_download(download_id: str):
 async def check_file_existence(request: FileExistenceRequest):
     """Check if downloaded model files actually exist on disk"""
     try:
+        logger.info(f"Received file existence check request: {request}")
+
+        # Handle empty files array
+        if not request.files:
+            logger.info("Empty files array received, returning empty response")
+            return FileExistenceResponse(files=[])
+
         mount_dir = os.getenv("MOUNT_DIR", "/workspace")
         models_dir = os.path.join(mount_dir, "models")
 
