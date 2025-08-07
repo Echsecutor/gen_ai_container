@@ -1,8 +1,8 @@
 # CUDA version
-#FROM ghcr.io/invoke-ai/invokeai
+FROM ghcr.io/invoke-ai/invokeai
 
 # For the ROCM version for AMD GPUs use:
-FROM ghcr.io/invoke-ai/invokeai:main-rocm
+#FROM ghcr.io/invoke-ai/invokeai:main-rocm
 
 # Apt should not ask for user input
 ENV DEBIAN_FRONTEND=noninteractive
