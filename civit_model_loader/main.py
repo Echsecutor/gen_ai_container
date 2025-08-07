@@ -1,10 +1,13 @@
 import os
 import logging
 import argparse
+import json
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
+
 from models import SearchRequest, DownloadRequest, DownloadInfo, ConfigExport, FileExistenceRequest, FileExistenceResponse, FileExistenceStatus
 from civitai_client import CivitaiClient
 from download_manager import DownloadManager
@@ -29,6 +32,15 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Civitai Model Loader", version="1.0.0", lifespan=lifespan)
 
+# Add CORS middleware to handle browser requests properly
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, specify your actual origins
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Serve static files (frontend)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
@@ -40,9 +52,24 @@ async def root():
 
 
 @app.post("/api/search")
-async def search_models(search_request: SearchRequest):
+async def search_models(request: Request):
     """Search for models on Civitai"""
     try:
+        # Handle both application/json and text/plain content types
+        content_type = request.headers.get("content-type", "")
+
+        if content_type.startswith("text/plain"):
+            # Handle text/plain requests (CORS fallback)
+            body = await request.body()
+            request_data = json.loads(body.decode())
+        else:
+            # Handle normal JSON requests
+            request_data = await request.json()
+
+        # Parse the request data into SearchRequest model
+        search_request = SearchRequest(**request_data)
+
+        logger.info(f"Received search request: {search_request}")
         client = CivitaiClient(api_token=search_request.api_token)
         results = client.search_models(search_request)
         return results

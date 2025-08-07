@@ -2,6 +2,22 @@
 
 ## WIP
 
+- Fixed 422 Unprocessable Entity error in search endpoint caused by browser CORS Content-Type downgrade
+
+  - Root cause: Browser sends `Content-Type: text/plain;charset=UTF-8` instead of `application/json` to avoid CORS preflight
+  - Solution: Modified search endpoint to handle both `application/json` and `text/plain` content types
+  - Added CORS middleware to FastAPI application for proper cross-origin request handling
+  - Search requests now work correctly from frontend without 422 errors
+
+- Fixed 422 Unprocessable Entity error in search endpoint when frontend sends `"types": null`
+
+  - Updated `SearchRequest` model to handle `null` values for `types` field properly
+  - Modified frontend to omit `types` field entirely when no model type is selected instead of sending `null`
+  - Added `cleanSearchRequest()` method to remove `null` or empty `types` values from all search requests
+  - Applied cleaning to initial searches, pagination, and cursor-based navigation
+  - Added `extra = "ignore"` configuration to `SearchRequest` to handle extra fields gracefully
+  - Added debugging logs to track search request processing
+
 - Fixed JavaScript syntax error in `config.js` where `resetToDefaults()` method was using `await` without being declared as `async`
 
   - Added `async` keyword to `resetToDefaults()` method declaration

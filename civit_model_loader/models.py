@@ -66,6 +66,10 @@ class SearchRequest(BaseModel):
     cursor: Optional[str] = None
     api_token: Optional[str] = None
 
+    class Config:
+        # Allow extra fields and ignore them
+        extra = "ignore"
+
 
 class DownloadRequest(BaseModel):
     model_id: int

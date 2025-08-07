@@ -305,6 +305,15 @@ The start script handles:
   - Updated exported `resetToDefaults()` function to be `async` and properly await the method call
   - Resolved "Uncaught SyntaxError: Unexpected reserved word" error at config.js:181:30
 
+- **Search Endpoint 422 Error**: Fixed API error when frontend sends search requests with `"types": null`:
+
+  - Updated `SearchRequest` model to handle `null` values for `types` field properly
+  - Modified frontend to omit `types` field entirely when no model type is selected instead of sending `null`
+  - Added `cleanSearchRequest()` method to remove `null` or empty `types` values from all search requests
+  - Applied cleaning to initial searches, pagination, and cursor-based navigation
+  - Added `extra = "ignore"` configuration to `SearchRequest` to handle extra fields gracefully
+  - Resolved "422 Unprocessable Entity" error when searching with null types
+
 - **File Existence Check 422 Error**: Fixed API error when checking file existence after importing configuration:
 
   - Added validation to filter out models with missing required fields before API call

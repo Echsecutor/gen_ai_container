@@ -5,7 +5,6 @@
 import { searchModels } from "./api.js";
 import {
   appState,
-  getApiToken,
   getCurrentSearch,
   getNsfwPreference,
   setCurrentPage,
@@ -63,20 +62,25 @@ class SearchManager {
 
     const searchRequest = {
       query: query || null,
-      types: modelType ? [modelType] : null,
       sort: sortBy,
       nsfw: getNsfwPreference() ? true : null, // Only send true or null, not false
       limit: 20,
       page: 1, // Always start from page 1 for new searches
       cursor: null, // Always start from beginning for new searches
-      api_token: getApiToken() || null,
     };
+
+    // Only add types if a model type is selected
+    if (modelType) {
+      searchRequest.types = [modelType];
+    }
 
     // Clear any stored metadata from previous searches
     appState.setLastSearchMetadata(null);
 
-    setCurrentSearch(searchRequest);
-    await this.performSearchWithRequest(searchRequest);
+    // Clean the search request before storing and using it
+    const cleanedRequest = this.cleanSearchRequest(searchRequest);
+    setCurrentSearch(cleanedRequest);
+    await this.performSearchWithRequest(cleanedRequest);
   }
 
   /**
@@ -87,7 +91,10 @@ class SearchManager {
     try {
       showLoading("searchResults");
 
-      const results = await searchModels(searchRequest);
+      // Clean up the search request to remove null types
+      const cleanedRequest = this.cleanSearchRequest(searchRequest);
+
+      const results = await searchModels(cleanedRequest);
 
       // Store metadata globally for cursor-based pagination
       appState.setLastSearchMetadata(results.metadata);
@@ -102,6 +109,25 @@ class SearchManager {
         container.innerHTML = "<p>Search failed. Please try again.</p>";
       }
     }
+  }
+
+  /**
+   * Cleans up search request to remove problematic null values
+   * @param {Object} searchRequest - Search request to clean
+   * @returns {Object} - Cleaned search request
+   */
+  cleanSearchRequest(searchRequest) {
+    const cleaned = { ...searchRequest };
+
+    // Remove types field if it's null or empty array
+    if (
+      cleaned.types === null ||
+      (Array.isArray(cleaned.types) && cleaned.types.length === 0)
+    ) {
+      delete cleaned.types;
+    }
+
+    return cleaned;
   }
 
   /**
@@ -292,8 +318,10 @@ class SearchManager {
       currentSearch.cursor = null;
     }
 
-    setCurrentSearch(currentSearch);
-    await this.performSearchWithRequest(currentSearch);
+    // Clean the search request before storing and using it
+    const cleanedSearch = this.cleanSearchRequest(currentSearch);
+    setCurrentSearch(cleanedSearch);
+    await this.performSearchWithRequest(cleanedSearch);
   }
 
   /**
@@ -314,8 +342,10 @@ class SearchManager {
     if (currentSearch) {
       // Update the page in the stored search request and perform search
       currentSearch.page = pageNum;
-      setCurrentSearch(currentSearch);
-      await this.performSearchWithRequest(currentSearch);
+      // Clean the search request before storing and using it
+      const cleanedSearch = this.cleanSearchRequest(currentSearch);
+      setCurrentSearch(cleanedSearch);
+      await this.performSearchWithRequest(cleanedSearch);
     }
   }
 
