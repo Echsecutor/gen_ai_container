@@ -6,10 +6,18 @@
 // Import all modules
 import { testApiToken } from "./js/api.js";
 import { exportConfig, importConfig } from "./js/config.js";
-import { loadDownloadedModels, startDownloadPolling } from "./js/download.js";
-import { performSearch } from "./js/search.js";
+import {
+  cancelDownload,
+  downloadModel,
+  loadDownloadedModels,
+  redownloadModel,
+  removeDownloadedModel,
+  startDownloadPolling,
+} from "./js/download.js";
+import { showModelDetails } from "./js/models.js";
+import { changeCursor, changePage, performSearch } from "./js/search.js";
 import { appState, saveApiToken as stateSaveApiToken } from "./js/state.js";
-import { modalManager, showToast, tokenUI } from "./js/ui.js";
+import { modalManager, openImageModal, showToast, tokenUI } from "./js/ui.js";
 
 /**
  * Application initialization
@@ -190,6 +198,18 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Make some functions globally available for backward compatibility
   window.closeModal = app.closeModal.bind(app);
+  window.showModelDetails = showModelDetails;
+  window.openImageModal = openImageModal;
+
+  // Download functions
+  window.downloadModel = downloadModel;
+  window.redownloadModel = redownloadModel;
+  window.removeDownloadedModel = removeDownloadedModel;
+  window.cancelDownload = cancelDownload;
+
+  // Search functions
+  window.changeCursor = changeCursor;
+  window.changePage = changePage;
 
   console.log("Civitai Model Loader initialized successfully");
 });

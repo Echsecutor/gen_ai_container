@@ -2,12 +2,14 @@
 
 ## WIP
 
-- Fixed 422 Unprocessable Entity error in search endpoint caused by browser CORS Content-Type downgrade
+- Fixed 422 Unprocessable Entity error in all POST endpoints caused by browser CORS Content-Type downgrade
 
   - Root cause: Browser sends `Content-Type: text/plain;charset=UTF-8` instead of `application/json` to avoid CORS preflight
-  - Solution: Modified search endpoint to handle both `application/json` and `text/plain` content types
+  - Solution: Applied CORS content-type handling to all POST endpoints: `/api/search`, `/api/download`, and `/api/check-files`
+  - All endpoints now handle both `application/json` and `text/plain` content types
+  - All frontend API calls work correctly without 422 errors when browser sends `Content-Type: text/plain;charset=UTF-8`
   - Added CORS middleware to FastAPI application for proper cross-origin request handling
-  - Search requests now work correctly from frontend without 422 errors
+  - Added consistent logging for all request types to help with debugging
 
 - Fixed 422 Unprocessable Entity error in search endpoint when frontend sends `"types": null`
 

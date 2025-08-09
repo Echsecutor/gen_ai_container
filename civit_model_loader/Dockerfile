@@ -25,5 +25,5 @@ EXPOSE 8080
 ENV MOUNT_DIR=/workspace
 ENV PORT=8080
 
-# Run the application
-CMD ["python", "main.py"]
+# Run the application in reload mode for local debugging
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080", "--reload"]

@@ -103,9 +103,24 @@ async def get_model_version(version_id: int):
 
 
 @app.post("/api/download")
-async def start_download(download_request: DownloadRequest):
+async def start_download(request: Request):
     """Start downloading a model file"""
     try:
+        # Handle both application/json and text/plain content types
+        content_type = request.headers.get("content-type", "")
+
+        if content_type.startswith("text/plain"):
+            # Handle text/plain requests (CORS fallback)
+            body = await request.body()
+            request_data = json.loads(body.decode())
+        else:
+            # Handle normal JSON requests
+            request_data = await request.json()
+
+        # Parse the request data into DownloadRequest model
+        download_request = DownloadRequest(**request_data)
+
+        logger.info(f"Received download request: {download_request}")
         download_id = download_manager.add_download(download_request)
         return {"download_id": download_id, "status": "started"}
     except Exception as e:
@@ -139,13 +154,27 @@ async def cancel_download(download_id: str):
 
 
 @app.post("/api/check-files")
-async def check_file_existence(request: FileExistenceRequest):
+async def check_file_existence(request: Request):
     """Check if downloaded model files actually exist on disk"""
     try:
-        logger.info(f"Received file existence check request: {request}")
+        # Handle both application/json and text/plain content types
+        content_type = request.headers.get("content-type", "")
+
+        if content_type.startswith("text/plain"):
+            # Handle text/plain requests (CORS fallback)
+            body = await request.body()
+            request_data = json.loads(body.decode())
+        else:
+            # Handle normal JSON requests
+            request_data = await request.json()
+
+        # Parse the request data into FileExistenceRequest model
+        file_request = FileExistenceRequest(**request_data)
+
+        logger.info(f"Received file existence check request: {file_request}")
 
         # Handle empty files array
-        if not request.files:
+        if not file_request.files:
             logger.info("Empty files array received, returning empty response")
             return FileExistenceResponse(files=[])
 
@@ -154,7 +183,7 @@ async def check_file_existence(request: FileExistenceRequest):
 
         file_statuses = []
 
-        for file_info in request.files:
+        for file_info in file_request.files:
             file_path = os.path.join(models_dir, file_info.filename)
             exists = os.path.isfile(file_path)
 

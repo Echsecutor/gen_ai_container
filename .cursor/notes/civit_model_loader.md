@@ -110,7 +110,13 @@ Complete frontend + backend implementation for downloading AI models from Civita
 ### Docker
 
 - `Dockerfile` - Container definition
-- `docker-compose.yml` - Complete deployment setup
+- `docker-compose.yml` - Complete deployment setup with health checks
+  - Service name: `civit-model-loader`
+  - Exposed on port 8080:8080
+  - Volume mounting: `${MODEL_DIR:-./models}:/workspace/models`
+  - Environment variables: `MOUNT_DIR=/workspace`, `PORT=8080`
+  - Health check: Curl to `/api/health` endpoint every 30s
+  - Auto-restart policy: `unless-stopped`
 - `start.sh` - Startup script for development
 
 ### Environment Variables
@@ -153,11 +159,64 @@ The start script handles:
 - Setting up local mount directory (`./dev_mount_dir`)
 - Starting the application on port 8080
 
+### Debug Setup with Live Reloading
+
+**For active development with automatic reloading when source files change:**
+
+#### Configuration
+
+- **Dockerfile**: Modified to use `uvicorn` with `--reload` flag
+  ```dockerfile
+  CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080", "--reload"]
+  ```
+- **docker-compose.yml**: Added source code volume mount for live file access
+  ```yaml
+  volumes:
+    - ${MODEL_DIR:-./models}:/workspace/models
+    - .:/app # Mount source code for live reloading
+  ```
+
+#### How It Works
+
+1. **Source Code Mounting**: Local directory mounted to `/app` in container
+2. **File Change Detection**: uvicorn's `--reload` flag monitors Python files
+3. **Automatic Restart**: Application restarts when changes detected
+4. **Real-time Development**: Edit files locally, see changes immediately
+
+#### Usage
+
+```bash
+cd civit_model_loader
+docker-compose up --build
+```
+
+**Benefits:**
+
+- ✅ No manual container restarts needed
+- ✅ Instant feedback on code changes
+- ✅ Efficient debugging workflow
+- ✅ Production-ready when deployed without volume mount
+
 ### Production (Docker)
+
+**Using Docker Compose (recommended for testing and production):**
+
+```bash
+cd civit_model_loader
+docker-compose up --build
+```
+
+**Manual Docker deployment:**
 
 1. Use Docker or docker-compose for production deployment
 2. Set appropriate MOUNT_DIR environment variable
 3. Ensure volume mounting for persistent model storage
+
+**Configuration:**
+
+- Set `MODEL_DIR` environment variable to specify host model directory (defaults to `./models`)
+- Container exposes port 8080 with health monitoring
+- Models persist in mounted volume across container restarts
 
 ### General Usage
 
