@@ -116,7 +116,9 @@ export const searchModels = withErrorHandler(async (searchRequest) => {
  * @returns {Promise<Object>} - Model details
  */
 export const getModelDetails = withErrorHandler(async (modelId) => {
-  return await apiClient.get(`/api/models/${modelId}`);
+  const apiToken = getApiToken();
+  const params = apiToken ? { api_token: apiToken } : {};
+  return await apiClient.get(`/api/models/${modelId}`, { params });
 }, "Failed to fetch model details");
 
 /**

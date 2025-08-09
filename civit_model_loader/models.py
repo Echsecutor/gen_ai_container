@@ -40,6 +40,7 @@ class CivitaiModelVersion(BaseModel):
     name: str
     description: Optional[str] = None
     baseModel: Optional[str] = None
+    trainedWords: List[str] = []
     files: List[CivitaiModelFile]
     images: List[Dict[str, Any]] = []
 

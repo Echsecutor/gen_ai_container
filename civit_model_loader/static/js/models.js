@@ -4,7 +4,12 @@
 
 import { getModelDetails } from "./api.js";
 import { modalManager, openImageModal, showLoading } from "./ui.js";
-import { escapeHtml, formatFileSize, sanitizeHtml } from "./utils.js";
+import {
+  copyToClipboard,
+  escapeHtml,
+  formatFileSize,
+  sanitizeHtml,
+} from "./utils.js";
 
 /**
  * Model display manager class
@@ -65,6 +70,12 @@ class ModelManager {
     // Collect all images from all versions
     const allImages = this.collectAllImages(model.modelVersions || []);
     const imagesHtml = this.createImagesSection(allImages, model.name);
+
+    // Collect and display trigger words
+    const triggerWordsHtml = this.createTriggerWordsSection(
+      model.modelVersions || []
+    );
+
     const versionsHtml = this.createVersionsSection(
       model.modelVersions || [],
       model.id,
@@ -80,10 +91,57 @@ class ModelManager {
       <p><strong>Description:</strong> ${sanitizeHtml(
         model.description || "No description available"
       )}</p>
+      ${triggerWordsHtml}
       ${imagesHtml}
       <div class="model-versions">
           <h3>Available Versions</h3>
           ${versionsHtml}
+      </div>
+    `;
+  }
+
+  /**
+   * Creates the trigger words section HTML
+   * @param {Array} modelVersions - Array of model versions
+   * @returns {string} - HTML for trigger words section
+   */
+  createTriggerWordsSection(modelVersions) {
+    // Collect all unique trigger words from all versions
+    const allTriggerWords = new Set();
+
+    if (Array.isArray(modelVersions)) {
+      modelVersions.forEach((version) => {
+        if (version.trainedWords && Array.isArray(version.trainedWords)) {
+          version.trainedWords.forEach((word) => {
+            if (word && word.trim()) {
+              allTriggerWords.add(word.trim());
+            }
+          });
+        }
+      });
+    }
+
+    if (allTriggerWords.size === 0) {
+      return "";
+    }
+
+    const triggerWordsArray = Array.from(allTriggerWords);
+
+    return `
+      <div class="trigger-words-section">
+        <h3>Trigger Words</h3>
+        <div class="trigger-words">
+          ${triggerWordsArray
+            .map(
+              (word) =>
+                `<span class="trigger-word" onclick="window.copyTriggerWord('${escapeHtml(
+                  word
+                ).replace(/'/g, "\\'")}')" title="Click to copy: ${escapeHtml(
+                  word
+                )}">${escapeHtml(word)}</span>`
+            )
+            .join("")}
+        </div>
       </div>
     `;
   }
@@ -185,17 +243,67 @@ class ModelManager {
   createVersionItem(version, modelId, previewImageUrl) {
     const filesHtml = (version.files || [])
       .map((file) =>
-        this.createFileItem(file, modelId, version.id, previewImageUrl)
+        this.createFileItem(
+          file,
+          modelId,
+          version.id,
+          previewImageUrl,
+          version.trainedWords || []
+        )
       )
       .join("");
+
+    // Create trigger words display for this version
+    const versionTriggerWordsHtml = this.createVersionTriggerWords(
+      version.trainedWords || []
+    );
 
     return `
       <div class="version-section">
           <h4>${escapeHtml(version.name)}</h4>
           <p>${sanitizeHtml(version.description || "No description")}</p>
+          ${versionTriggerWordsHtml}
           <div class="version-files">
               ${filesHtml}
           </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Creates trigger words HTML for a specific version
+   * @param {Array} trainedWords - Array of trigger words for this version
+   * @returns {string} - HTML for version trigger words
+   */
+  createVersionTriggerWords(trainedWords) {
+    if (
+      !trainedWords ||
+      !Array.isArray(trainedWords) ||
+      trainedWords.length === 0
+    ) {
+      return "";
+    }
+
+    const filteredWords = trainedWords.filter((word) => word && word.trim());
+    if (filteredWords.length === 0) {
+      return "";
+    }
+
+    return `
+      <div class="version-trigger-words">
+        <strong>Trigger Words:</strong>
+        <div class="trigger-words-inline">
+          ${filteredWords
+            .map(
+              (word) =>
+                `<span class="trigger-word-small" onclick="window.copyTriggerWord('${escapeHtml(
+                  word.trim()
+                ).replace(/'/g, "\\'")}')" title="Click to copy: ${escapeHtml(
+                  word.trim()
+                )}">${escapeHtml(word.trim())}</span>`
+            )
+            .join("")}
+        </div>
       </div>
     `;
   }
@@ -206,12 +314,17 @@ class ModelManager {
    * @param {number} modelId - Model ID
    * @param {number} versionId - Version ID
    * @param {string} previewImageUrl - Preview image URL
+   * @param {Array} triggerWords - Trigger words for this version
    * @returns {string} - HTML for file item
    */
-  createFileItem(file, modelId, versionId, previewImageUrl) {
+  createFileItem(file, modelId, versionId, previewImageUrl, triggerWords = []) {
     const fileSize = formatFileSize(file.sizeKB * 1024);
     const safePreviewUrl = escapeHtml(previewImageUrl || "");
     const safeFilename = escapeHtml(file.name);
+    const safeTriggerWords = JSON.stringify(triggerWords || []).replace(
+      /'/g,
+      "\\'"
+    );
 
     return `
       <div class="file-item">
@@ -219,7 +332,7 @@ class ModelManager {
               <strong>${safeFilename}</strong>
               <span class="file-size">${fileSize}</span>
           </div>
-          <button onclick="window.downloadModel(${modelId}, ${versionId}, ${file.id}, '${safeFilename}', '${safePreviewUrl}')">
+          <button onclick="window.downloadModel(${modelId}, ${versionId}, ${file.id}, '${safeFilename}', '${safePreviewUrl}', ${safeTriggerWords})">
               Download
           </button>
       </div>
@@ -231,6 +344,14 @@ class ModelManager {
    */
   closeModal() {
     modalManager.closeModal("modelModal");
+  }
+
+  /**
+   * Copies a trigger word to clipboard
+   * @param {string} triggerWord - The trigger word to copy
+   */
+  async copyTriggerWord(triggerWord) {
+    await copyToClipboard(triggerWord, `Copied "${triggerWord}" to clipboard!`);
   }
 
   /**
@@ -298,6 +419,11 @@ export function closeModal() {
   return modelManager.closeModal();
 }
 
+export function copyTriggerWord(triggerWord) {
+  return modelManager.copyTriggerWord(triggerWord);
+}
+
 // Make functions available globally for onclick handlers
 window.showModelDetails = showModelDetails;
 window.openImageModal = openImageModal;
+window.copyTriggerWord = copyTriggerWord;

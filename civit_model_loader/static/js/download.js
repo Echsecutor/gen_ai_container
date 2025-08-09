@@ -42,8 +42,16 @@ class DownloadManager {
    * @param {number} fileId - File ID
    * @param {string} filename - Filename
    * @param {string} imageUrl - Optional preview image URL
+   * @param {Array} triggerWords - Optional trigger words array
    */
-  async downloadModel(modelId, versionId, fileId, filename, imageUrl = null) {
+  async downloadModel(
+    modelId,
+    versionId,
+    fileId,
+    filename,
+    imageUrl = null,
+    triggerWords = []
+  ) {
     try {
       const downloadRequest = {
         model_id: modelId,
@@ -62,6 +70,7 @@ class DownloadManager {
         filename: filename,
         downloadId: result.download_id,
         imageUrl: imageUrl,
+        triggerWords: triggerWords || [],
       };
 
       // Add to downloaded models (handles deduplication)
@@ -262,6 +271,10 @@ class DownloadManager {
     const downloadDate = new Date(model.timestamp).toLocaleDateString();
     const safeImageUrl = escapeHtml(model.imageUrl || "");
     const safeFilename = escapeHtml(model.filename);
+    const safeTriggerWords = JSON.stringify(model.triggerWords || []).replace(
+      /'/g,
+      "\\'"
+    );
 
     // File existence status
     let fileStatusHtml = "";
@@ -281,6 +294,40 @@ class DownloadManager {
       `;
     }
 
+    // Display trigger words if available
+    let triggerWordsHtml = "";
+    if (
+      model.triggerWords &&
+      Array.isArray(model.triggerWords) &&
+      model.triggerWords.length > 0
+    ) {
+      const filteredWords = model.triggerWords.filter(
+        (word) => word && word.trim()
+      );
+      if (filteredWords.length > 0) {
+        triggerWordsHtml = `
+          <div class="downloaded-model-trigger-words">
+            <strong>Trigger Words:</strong>
+            <div class="trigger-words-inline">
+              ${filteredWords
+                .map(
+                  (word) =>
+                    `<span class="trigger-word-small" onclick="window.copyTriggerWord('${escapeHtml(
+                      word.trim()
+                    ).replace(
+                      /'/g,
+                      "\\'"
+                    )}')" title="Click to copy: ${escapeHtml(
+                      word.trim()
+                    )}">${escapeHtml(word.trim())}</span>`
+                )
+                .join("")}
+            </div>
+          </div>
+        `;
+      }
+    }
+
     // Add visual indicator for missing files
     const modelClass =
       fileStatus && !fileStatus.exists
@@ -288,15 +335,16 @@ class DownloadManager {
         : "downloaded-model";
 
     return `
-      <div class="${modelClass}">
+      <div class="${modelClass}" onclick="window.showDownloadedModelDetails(${model.id})" style="cursor: pointer;">
           ${imageHtml}
           <div class="model-content">
               <h4>${safeFilename}</h4>
               <p><strong>Model ID:</strong> ${model.id}</p>
               <p><strong>Downloaded:</strong> ${downloadDate}</p>
+              ${triggerWordsHtml}
               ${fileStatusHtml}
-              <div class="model-actions">
-                  <button onclick="window.redownloadModel(${model.id}, ${model.versionId}, ${model.fileId}, '${safeFilename}', '${safeImageUrl}')" class="btn-primary">
+              <div class="model-actions" onclick="event.stopPropagation();">
+                  <button onclick="window.redownloadModel(${model.id}, ${model.versionId}, ${model.fileId}, '${safeFilename}', '${safeImageUrl}', ${safeTriggerWords})" class="btn-primary">
                       Re-download
                   </button>
                   <button onclick="window.removeDownloadedModel(${model.id}, ${model.versionId}, ${model.fileId})" class="btn-danger">
@@ -315,9 +363,24 @@ class DownloadManager {
    * @param {number} fileId - File ID
    * @param {string} filename - Filename
    * @param {string} imageUrl - Optional preview image URL
+   * @param {Array} triggerWords - Optional trigger words array
    */
-  async redownloadModel(modelId, versionId, fileId, filename, imageUrl = null) {
-    return this.downloadModel(modelId, versionId, fileId, filename, imageUrl);
+  async redownloadModel(
+    modelId,
+    versionId,
+    fileId,
+    filename,
+    imageUrl = null,
+    triggerWords = []
+  ) {
+    return this.downloadModel(
+      modelId,
+      versionId,
+      fileId,
+      filename,
+      imageUrl,
+      triggerWords
+    );
   }
 
   /**
@@ -475,6 +538,23 @@ class DownloadManager {
       showToast("Download history cleared", "warning");
     }
   }
+
+  /**
+   * Shows model details for a downloaded model by fetching from API
+   * @param {number} modelId - Model ID to fetch details for
+   */
+  async showDownloadedModelDetails(modelId) {
+    try {
+      showToast("Fetching model details...", "info");
+
+      // Import the model manager to use its showModelDetails method
+      const { modelManager } = await import("./models.js");
+      await modelManager.showModelDetails(modelId);
+    } catch (error) {
+      console.error("Error fetching downloaded model details:", error);
+      showToast("Failed to fetch model details: " + error.message, "error");
+    }
+  }
 }
 
 // Create and export download manager instance
@@ -486,14 +566,16 @@ export function downloadModel(
   versionId,
   fileId,
   filename,
-  imageUrl = null
+  imageUrl = null,
+  triggerWords = []
 ) {
   return downloadManager.downloadModel(
     modelId,
     versionId,
     fileId,
     filename,
-    imageUrl
+    imageUrl,
+    triggerWords
   );
 }
 
@@ -502,14 +584,16 @@ export function redownloadModel(
   versionId,
   fileId,
   filename,
-  imageUrl = null
+  imageUrl = null,
+  triggerWords = []
 ) {
   return downloadManager.redownloadModel(
     modelId,
     versionId,
     fileId,
     filename,
-    imageUrl
+    imageUrl,
+    triggerWords
   );
 }
 
@@ -533,8 +617,13 @@ export function stopDownloadPolling() {
   return downloadManager.stopDownloadPolling();
 }
 
+export function showDownloadedModelDetails(modelId) {
+  return downloadManager.showDownloadedModelDetails(modelId);
+}
+
 // Make functions available globally for onclick handlers
 window.downloadModel = downloadModel;
 window.redownloadModel = redownloadModel;
 window.removeDownloadedModel = removeDownloadedModel;
 window.cancelDownload = cancelDownload;
+window.showDownloadedModelDetails = showDownloadedModelDetails;

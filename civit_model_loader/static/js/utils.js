@@ -168,6 +168,47 @@ export function debounce(func, wait) {
 }
 
 /**
+ * Copies text to clipboard and shows user feedback
+ * @param {string} text - Text to copy to clipboard
+ * @param {string} successMessage - Message to show on success
+ * @returns {Promise<boolean>} - True if successful, false otherwise
+ */
+export async function copyToClipboard(
+  text,
+  successMessage = "Copied to clipboard!"
+) {
+  try {
+    // Use the modern Clipboard API if available
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      // Fallback for older browsers or non-secure contexts
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      textArea.style.position = "fixed";
+      textArea.style.opacity = "0";
+      textArea.style.left = "-999999px";
+      textArea.style.top = "-999999px";
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textArea);
+    }
+
+    // Show success feedback
+    const { showToast } = await import("./ui.js");
+    showToast(successMessage, "success");
+    return true;
+  } catch (error) {
+    console.error("Failed to copy to clipboard:", error);
+    const { showToast } = await import("./ui.js");
+    showToast("Failed to copy to clipboard", "error");
+    return false;
+  }
+}
+
+/**
  * Safe async error handler wrapper
  * @param {Function} asyncFn - The async function to wrap
  * @param {string} errorMessage - Default error message

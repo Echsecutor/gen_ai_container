@@ -79,10 +79,18 @@ async def search_models(request: Request):
 
 
 @app.get("/api/models/{model_id}")
-async def get_model(model_id: int):
+async def get_model(model_id: int, request: Request):
     """Get detailed information about a specific model"""
     try:
-        client = CivitaiClient()
+        # Try to get API token from query parameters or headers
+        api_token = request.query_params.get("api_token")
+        if not api_token:
+            # Check Authorization header
+            auth_header = request.headers.get("authorization")
+            if auth_header and auth_header.startswith("Bearer "):
+                api_token = auth_header[7:]
+
+        client = CivitaiClient(api_token)
         model_data = client.get_model(model_id)
         return model_data
     except Exception as e:

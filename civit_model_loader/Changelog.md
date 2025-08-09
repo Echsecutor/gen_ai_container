@@ -2,6 +2,31 @@
 
 ## WIP
 
+- Added trigger words (trainedWords) display and storage functionality
+
+  - Updated Pydantic models to include `trainedWords` field in `CivitaiModelVersion`
+  - Enhanced model details modal to display trigger words section with styled trigger word badges
+  - Added version-specific trigger words display in each model version section
+  - Modified download process to store trigger words in localStorage for downloaded models
+  - Added trigger words display to downloaded models section
+  - Enhanced CSS styling for trigger words with hover effects and responsive design
+  - Trigger words are collected from all model versions and deduplicated for main display
+  - Updated API token handling to ensure model details endpoint receives authentication for restricted content
+  - **Added click-to-copy functionality for trigger words**: All trigger word bubbles are now clickable and copy the trigger word to clipboard with user feedback
+    - Modern Clipboard API support with fallback for older browsers
+    - Visual feedback with transform animations and shadow effects on hover/click
+    - Toast notifications confirm successful copy with the copied trigger word
+    - Works across all trigger word displays: search results, model details, and downloaded models
+
+- Added model details modal functionality for downloaded models
+
+  - Added click handlers to downloaded model cards to fetch and display full model details
+  - Enhanced downloaded model cards with cursor pointer styling to indicate clickability
+  - Updated backend model details endpoint to accept API token via query parameters or headers
+  - Improved API client to pass API token when fetching model details
+  - Added event propagation handling to prevent conflicts between card clicks and action buttons
+  - Reuses existing model details modal system for consistent user experience
+
 - Fixed 422 Unprocessable Entity error in all POST endpoints caused by browser CORS Content-Type downgrade
 
   - Root cause: Browser sends `Content-Type: text/plain;charset=UTF-8` instead of `application/json` to avoid CORS preflight
