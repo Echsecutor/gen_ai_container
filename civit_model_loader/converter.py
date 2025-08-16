@@ -67,8 +67,8 @@ def calculate_shorthash(filename: str, hash_cache: Any) -> str:
     if os.path.basename(filename) in hash_cache and "NOFILE" != hash_cache[os.path.basename(filename)]:
         shorthash = hash_cache[os.path.basename(filename)]
     else:
-        logger.info(f"    Calculating model hash for {
-                    os.path.basename(filename)}. This will take a few seconds...")
+        logger.info(f"    Calculating model hash for "
+                    f"{os.path.basename(filename)}. This will take a few seconds...")
         longhash = calculate_sha256(filename)
         shorthash = longhash[0:10]
         save_model_hash(os.path.basename(filename), shorthash, hash_cache)
@@ -131,8 +131,8 @@ def main() -> None:
             logger.error(f"        Failed to convert {filename}: {message}")
             continue
 
-    logger.info(f"Work complete. {
-                successes} / {file_count} files successfully converted.")
+    logger.info(f"Work complete. "
+                f"{successes} / {file_count} files successfully converted.")
 
 
 def convert_image_metadata(input_file: str, output_file: str, invokeai_cfg: dict = None, hash_cache: dict = None) -> tuple[bool, str]:
@@ -181,8 +181,8 @@ def convert_image_metadata(input_file: str, output_file: str, invokeai_cfg: dict
                             im_original.info['invokeai_metadata'])
                         del im_original
                     else:
-                        error_msg = f"ERROR: Original image {
-                            org_filename} not found!"
+                        error_msg = f"ERROR: Original image " \
+                            f"{org_filename} not found!"
                         logger.error(f"        {error_msg}")
                         return False, error_msg
             else:
@@ -222,8 +222,8 @@ def convert_image_metadata(input_file: str, output_file: str, invokeai_cfg: dict
             logger.info(
                 "        Model hash is not sha256! Attempting to calculate hash from model file")
             if 'model_folder' in invokeai_cfg:
-                model_file = f"{
-                    invokeai_cfg['model_folder']}/{json_data['model']['name']}.safetensors"
+                model_file = f"{invokeai_cfg['model_folder']}/" \
+                    f"{json_data['model']['name']}.safetensors"
                 model_hash = calculate_shorthash(model_file, hash_cache)
                 if model_hash != "NOFILE":
                     meta_mhash = 'Model hash: ' + model_hash
@@ -251,14 +251,14 @@ def convert_image_metadata(input_file: str, output_file: str, invokeai_cfg: dict
                 logger.info(
                     "        Model hash is not sha256! Attempting to calculate hash from model file")
                 if 'vae_folder' in invokeai_cfg:
-                    model_file = f"{
-                        invokeai_cfg['vae_folder']}/{json_data['vae']['name']}.safetensors"
+                    model_file = f"{invokeai_cfg['vae_folder']}/" \
+                        f"{json_data['vae']['name']}.safetensors"
                     model_hash = calculate_shorthash(model_file, hash_cache)
                     if model_hash != "NOFILE":
                         meta_vhash = 'VAE hash: ' + model_hash
                     else:
-                        error_msg = f"ERROR: Model file {
-                            model_file} not found!"
+                        error_msg = f"ERROR: Model file " \
+                            f"{model_file} not found!"
                         logger.error(f"        {error_msg}")
                         return False, error_msg
                 else:
@@ -283,12 +283,12 @@ def convert_image_metadata(input_file: str, output_file: str, invokeai_cfg: dict
                     logger.info(
                         "        Model hash is not sha256! Attempting to calculate hash from model file")
                     if 'lora_folder' in invokeai_cfg:
-                        model_file = f"{
-                            invokeai_cfg['lora_folder']}/{lora['model']['name']}.safetensors"
+                        model_file = f"{invokeai_cfg['lora_folder']}/" \
+                            f"{lora['model']['name']}.safetensors"
                         lora_hash = calculate_shorthash(model_file, hash_cache)
                         if lora_hash == "NOFILE":
-                            error_msg = f"ERROR: Model file {
-                                model_file} not found!"
+                            error_msg = f"ERROR: Model file " \
+                                f"{model_file} not found!"
                             logger.error(f"        {error_msg}")
                             return False, error_msg
                     else:

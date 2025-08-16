@@ -217,6 +217,33 @@ export const checkFileExistence = withErrorHandler(async (files) => {
 }, "File existence check failed");
 
 /**
+ * Download converted images as ZIP file
+ * @param {string} directory - Directory path to scan for PNG images
+ * @returns {Promise<Blob>} - ZIP file blob
+ */
+export const downloadConvertedImages = withErrorHandler(async (directory) => {
+  const url = `/api/download-converted-images?directory=${encodeURIComponent(
+    directory
+  )}`;
+
+  const response = await fetch(url, {
+    method: "GET",
+    headers: {
+      Accept: "application/zip",
+    },
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(
+      `Download failed: ${response.status} ${response.statusText} - ${errorText}`
+    );
+  }
+
+  return await response.blob();
+}, "Image conversion download failed");
+
+/**
  * Batch API operations utility
  */
 export class BatchApiClient {

@@ -52,8 +52,8 @@ def test_converter_functions():
             img.load()
             if 'invokeai_metadata' in img.info:
                 print("✓ Input image contains InvokeAI metadata")
-                print(f"  Metadata length: {
-                      len(img.info['invokeai_metadata'])} characters")
+                print(f"  Metadata length: "
+                      f"{len(img.info['invokeai_metadata'])} characters")
             else:
                 print("✗ Input image does not contain InvokeAI metadata")
                 print("  Available metadata keys:", list(img.info.keys()))
@@ -70,8 +70,8 @@ def test_converter_functions():
             img.load()
             if 'parameters' in img.info:
                 print("✓ Expected output contains A1111 'parameters' metadata")
-                print(f"  Parameters length: {
-                      len(img.info['parameters'])} characters")
+                print(f"  Parameters length: "
+                      f"{len(img.info['parameters'])} characters")
                 print(f"  First 200 chars: {img.info['parameters'][:200]}...")
             else:
                 print("✗ Expected output does not contain A1111 'parameters' metadata")
@@ -102,10 +102,10 @@ def test_converter_functions():
                     if 'parameters' in converted_img.info:
                         print(
                             "✓ Converted image contains A1111 'parameters' metadata")
-                        print(f"  Parameters length: {
-                              len(converted_img.info['parameters'])} characters")
-                        print(f"  First 200 chars: {
-                              converted_img.info['parameters'][:200]}...")
+                        print(f"  Parameters length: "
+                              f"{len(converted_img.info['parameters'])} characters")
+                        print(f"  First 200 chars: "
+                              f"{converted_img.info['parameters'][:200]}...")
 
                         # Compare with expected output (basic comparison)
                         with Image.open(expected_img) as expected:
@@ -175,8 +175,8 @@ def test_converter_functions():
         if success:
             print(f"✓ Custom config conversion successful: {message}")
         else:
-            print(f"⚠ Custom config conversion failed (expected if model files not found): {
-                  message}")
+            print(f"⚠ Custom config conversion failed (expected if model files not found): "
+                  f"{message}")
 
     except Exception as e:
         print(f"⚠ Custom config conversion error (may be expected): {e}")

@@ -346,6 +346,78 @@ section h2 {
   gap: 15px;
 }
 
+/* Image Conversion */
+.conversion-section {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.conversion-help {
+  color: #666;
+  margin-bottom: 15px;
+  font-size: 14px;
+}
+
+.conversion-form {
+  margin-bottom: 20px;
+}
+
+.conversion-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.conversion-row input {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.conversion-row button {
+  padding: 10px 20px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s ease;
+}
+
+.conversion-row button:hover {
+  background: #0056b3;
+}
+
+.conversion-row button:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+}
+
+.conversion-status {
+  margin-top: 15px;
+  min-height: 20px;
+}
+
+.conversion-status .loading {
+  color: #007bff;
+  font-style: italic;
+}
+
+.conversion-status .success {
+  color: #28a745;
+  font-weight: 500;
+}
+
+.conversion-status .error {
+  color: #dc3545;
+  font-weight: 500;
+}
+
 .downloaded-model {
   border: 1px solid #e2e8f0;
   border-radius: 8px;
@@ -635,6 +707,15 @@ button:disabled {
 
   .downloaded-controls {
     flex-direction: column;
+  }
+
+  .conversion-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .conversion-row button {
+    margin-top: 10px;
   }
 
   .search-results {

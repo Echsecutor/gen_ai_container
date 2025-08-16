@@ -2,6 +2,22 @@
 
 ## WIP
 
+- Fixed syntax errors in Python files caused by unterminated string literals
+
+  - Fixed broken f-string continuations in `main.py`, `converter.py`, and test files
+  - All string literals now properly use line continuation with backslashes
+  - Docker container now starts successfully without syntax errors
+
+- Added frontend UI for image conversion feature
+
+  - New "Convert Output Images" section with directory input field and download button
+  - Default directory path set to `/workspace/output/images` matching backend endpoint
+  - Added `downloadConvertedImages()` API client method for ZIP file downloads
+  - Implemented download handler with automatic file naming using timestamps
+  - Added loading states, success/error feedback, and toast notifications
+  - Responsive CSS styling matching existing design patterns
+  - Mobile-friendly layout with stacked form elements on small screens
+
 - Added new API endpoint for downloading converted images as ZIP file
 
   - `GET /api/download-converted-images?directory=/path/to/images` endpoint scans directory for PNG files

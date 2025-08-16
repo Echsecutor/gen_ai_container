@@ -118,6 +118,24 @@
                     <!-- Downloaded models will be populated here -->
                 </div>
             </section>
+
+            <!-- Image Conversion Section -->
+            <section class="conversion-section">
+                <h2>Convert Output Images</h2>
+                <p class="conversion-help">
+                    Convert InvokeAI generated images to Automatic1111 format and download as ZIP
+                </p>
+                <div class="conversion-form">
+                    <div class="conversion-row">
+                        <input type="text" id="imageDirectory" placeholder="Directory path..."
+                            value="/workspace/output/images">
+                        <button id="downloadImagesBtn">Download Converted Images</button>
+                    </div>
+                </div>
+                <div id="conversionStatus" class="conversion-status">
+                    <!-- Conversion status will be shown here -->
+                </div>
+            </section>
         </div>
     </div>
 

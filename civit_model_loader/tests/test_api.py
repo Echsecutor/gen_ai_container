@@ -76,8 +76,8 @@ def test_civitai_api():
             }
             response = requests.get(
                 f"{base_url}/models", headers=headers, params=params)
-            print(f"Sort '{sort_param}': {
-                  response.status_code} - {response.url}")
+            print(f"Sort '{sort_param}': "
+                  f"{response.status_code} - {response.url}")
             if response.status_code != 200:
                 print(f"  Error: {response.text}")
         except Exception as e:
@@ -96,8 +96,8 @@ def test_civitai_api():
             }
             response = requests.get(
                 f"{base_url}/models", headers=headers, params=params)
-            print(f"Period '{period_param}': {
-                  response.status_code} - {response.url}")
+            print(f"Period '{period_param}': "
+                  f"{response.status_code} - {response.url}")
             if response.status_code != 200:
                 print(f"  Error: {response.text}")
         except Exception as e:
@@ -115,8 +115,8 @@ def test_civitai_api():
             }
             response = requests.get(
                 f"{base_url}/models", headers=headers, params=params)
-            print(f"Type '{model_type}': {
-                  response.status_code} - {response.url}")
+            print(f"Type '{model_type}': "
+                  f"{response.status_code} - {response.url}")
             if response.status_code != 200:
                 print(f"  Error: {response.text}")
         except Exception as e:

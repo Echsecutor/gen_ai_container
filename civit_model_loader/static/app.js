@@ -4,7 +4,7 @@
  */
 
 // Import all modules
-import { testApiToken } from "./js/api.js";
+import { downloadConvertedImages, testApiToken } from "./js/api.js";
 import "./js/config.js"; // Import to initialize ConfigManager
 import {
   cancelDownload,
@@ -87,6 +87,13 @@ class App {
     // Downloaded models
     this.addEventListener("refreshDownloaded", "click", loadDownloadedModels);
 
+    // Image conversion
+    this.addEventListener(
+      "downloadImagesBtn",
+      "click",
+      this.downloadConvertedImages.bind(this)
+    );
+
     // Configuration - handled by ConfigManager in config.js
 
     // Modal close handlers (for backward compatibility)
@@ -158,6 +165,76 @@ class App {
     const nsfwCheckbox = document.getElementById("nsfwFilter");
     if (nsfwCheckbox) {
       appState.saveNsfwPreference(nsfwCheckbox.checked);
+    }
+  }
+
+  /**
+   * Downloads converted images as ZIP file
+   */
+  async downloadConvertedImages() {
+    const directoryInput = document.getElementById("imageDirectory");
+    const statusDiv = document.getElementById("conversionStatus");
+
+    if (!directoryInput) {
+      showToast("Directory input not found", "error");
+      return;
+    }
+
+    const directory = directoryInput.value.trim();
+    if (!directory) {
+      showToast("Please enter a directory path", "error");
+      return;
+    }
+
+    try {
+      // Show loading status
+      if (statusDiv) {
+        statusDiv.innerHTML =
+          '<div class="loading">Converting and preparing images...</div>';
+      }
+
+      showToast("Starting image conversion...", "info");
+
+      // Call the API to get the ZIP file
+      const blob = await downloadConvertedImages(directory);
+
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.style.display = "none";
+      a.href = url;
+
+      // Generate filename with timestamp
+      const timestamp = new Date()
+        .toISOString()
+        .replace(/[:.]/g, "-")
+        .slice(0, -5);
+      a.download = `converted_images_${timestamp}.zip`;
+
+      document.body.appendChild(a);
+      a.click();
+
+      // Cleanup
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      showToast("Images converted and downloaded successfully!", "success");
+
+      if (statusDiv) {
+        statusDiv.innerHTML =
+          '<div class="success">✅ Download completed successfully</div>';
+        // Clear status after 5 seconds
+        setTimeout(() => {
+          statusDiv.innerHTML = "";
+        }, 5000);
+      }
+    } catch (error) {
+      console.error("Image conversion download failed:", error);
+      showToast(`Download failed: ${error.message}`, "error");
+
+      if (statusDiv) {
+        statusDiv.innerHTML = `<div class="error">❌ ${error.message}</div>`;
+      }
     }
   }
 

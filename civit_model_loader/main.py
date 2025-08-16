@@ -272,8 +272,8 @@ async def download_converted_images(directory: str = Query(default="/workspace/o
                     else:
                         conversion_errors.append(
                             f"{os.path.basename(png_file)}: {message}")
-                        logger.warning(f"Failed to convert {
-                                       png_file}: {message}")
+                        logger.warning(f"Failed to convert "
+                                       f"{png_file}: {message}")
 
                 except Exception as e:
                     error_msg = f"{os.path.basename(png_file)}: {str(e)}"
@@ -286,12 +286,12 @@ async def download_converted_images(directory: str = Query(default="/workspace/o
                     error_summary = "; ".join(
                         conversion_errors[:3])  # Show first 3 errors
                     if len(conversion_errors) > 3:
-                        error_summary += f" and {
-                            len(conversion_errors) - 3} more errors"
+                        error_summary += f" and " \
+                            f"{len(conversion_errors) - 3} more errors"
                     raise HTTPException(
                         status_code=422,
-                        detail=f"No files could be converted. Errors: {
-                            error_summary}"
+                        detail=f"No files could be converted. Errors: "
+                        f"{error_summary}"
                     )
                 else:
                     raise HTTPException(
@@ -308,10 +308,10 @@ async def download_converted_images(directory: str = Query(default="/workspace/o
                 # Add a summary file if there were errors
                 if conversion_errors:
                     summary_content = "Conversion Summary\n" + "=" * 50 + "\n\n"
-                    summary_content += f"Successfully converted: {
-                        len(converted_files)} files\n"
-                    summary_content += f"Failed conversions: {
-                        len(conversion_errors)} files\n\n"
+                    summary_content += f"Successfully converted: " \
+                        f"{len(converted_files)} files\n"
+                    summary_content += f"Failed conversions: " \
+                        f"{len(conversion_errors)} files\n\n"
                     summary_content += "Errors:\n" + \
                         "\n".join(conversion_errors)
 
@@ -321,8 +321,8 @@ async def download_converted_images(directory: str = Query(default="/workspace/o
                         f.write(summary_content)
                     zipf.write(summary_path, "conversion_summary.txt")
 
-            logger.info(f"Created ZIP file with {
-                        len(converted_files)} converted images")
+            logger.info(f"Created ZIP file with "
+                        f"{len(converted_files)} converted images")
 
             # Return the ZIP file with background task to clean up temp directory
 
@@ -331,8 +331,8 @@ async def download_converted_images(directory: str = Query(default="/workspace/o
                     shutil.rmtree(temp_dir)
                     logger.info(f"Cleaned up temporary directory: {temp_dir}")
                 except Exception as e:
-                    logger.warning(f"Failed to clean up temporary directory {
-                                   temp_dir}: {e}")
+                    logger.warning(f"Failed to clean up temporary directory "
+                                   f"{temp_dir}: {e}")
 
             # Note: We can't use BackgroundTasks here since it's not in the function signature
             # Instead, we'll rely on the OS to clean up /tmp eventually

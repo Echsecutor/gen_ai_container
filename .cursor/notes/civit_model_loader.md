@@ -80,6 +80,12 @@ Complete frontend + backend implementation for downloading AI models from Civita
   - Image modal for full-size viewing
   - Error handling for missing/broken images
   - Responsive image grids for different screen sizes
+- **Image Conversion Interface**:
+  - Directory input field with default `/workspace/output/images` path
+  - Download button to trigger conversion and ZIP download
+  - Real-time status feedback (loading, success, error states)
+  - Automatic filename generation with timestamps
+  - Mobile-responsive layout with stacked form elements
 
 ## API Endpoints
 
