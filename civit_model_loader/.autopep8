@@ -1,0 +1,6 @@
+[autopep8]
+max_line_length = 120
+ignore = E501,W503
+aggressive = 1
+# Prevent breaking string literals across lines
+experimental = false

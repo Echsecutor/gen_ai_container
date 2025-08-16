@@ -2,7 +2,12 @@ import os
 import logging
 import argparse
 import json
-from fastapi import FastAPI, HTTPException, Request
+import tempfile
+import zipfile
+import glob
+import shutil
+from pathlib import Path
+from fastapi import FastAPI, HTTPException, Request, Query
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -11,6 +16,7 @@ from contextlib import asynccontextmanager
 from models import SearchRequest, DownloadRequest, DownloadInfo, ConfigExport, FileExistenceRequest, FileExistenceResponse, FileExistenceStatus
 from civitai_client import CivitaiClient
 from download_manager import DownloadManager
+from converter import convert_invokeai_to_a1111
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -208,6 +214,158 @@ async def check_file_existence(request: Request):
     except Exception as e:
         logger.error(f"File existence check error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/download-converted-images")
+async def download_converted_images(directory: str = Query(default="/workspace/output/images")):
+    """
+    Download all PNG images from a directory with metadata converted to Automatic1111 format.
+
+    Args:
+        directory: Directory to scan for PNG images (default: /workspace/output/images)
+
+    Returns:
+        ZIP file containing converted images
+    """
+    try:
+        # Validate directory exists
+        if not os.path.exists(directory):
+            raise HTTPException(
+                status_code=404, detail=f"Directory not found: {directory}")
+
+        if not os.path.isdir(directory):
+            raise HTTPException(
+                status_code=400, detail=f"Path is not a directory: {directory}")
+
+        # Find all PNG files in the directory
+        png_pattern = os.path.join(directory, "*.png")
+        png_files = glob.glob(png_pattern)
+
+        if not png_files:
+            raise HTTPException(
+                status_code=404, detail=f"No PNG files found in directory: {directory}")
+
+        logger.info(f"Found {len(png_files)} PNG files in {directory}")
+
+        # Create temporary directory for converted files
+        temp_dir = tempfile.mkdtemp()
+        converted_files = []
+        conversion_errors = []
+
+        try:
+            # Convert each PNG file
+            for png_file in png_files:
+                try:
+                    # Generate output filename
+                    base_name = Path(png_file).stem
+                    output_filename = f"{base_name}_a1111.png"
+                    output_path = os.path.join(temp_dir, output_filename)
+
+                    # Convert the image metadata
+                    success, message = convert_invokeai_to_a1111(
+                        png_file, output_path)
+
+                    if success:
+                        converted_files.append((output_path, output_filename))
+                        logger.info(
+                            f"Converted: {png_file} -> {output_filename}")
+                    else:
+                        conversion_errors.append(
+                            f"{os.path.basename(png_file)}: {message}")
+                        logger.warning(f"Failed to convert {
+                                       png_file}: {message}")
+
+                except Exception as e:
+                    error_msg = f"{os.path.basename(png_file)}: {str(e)}"
+                    conversion_errors.append(error_msg)
+                    logger.error(f"Error converting {png_file}: {e}")
+
+            # Check if we have any converted files
+            if not converted_files:
+                if conversion_errors:
+                    error_summary = "; ".join(
+                        conversion_errors[:3])  # Show first 3 errors
+                    if len(conversion_errors) > 3:
+                        error_summary += f" and {
+                            len(conversion_errors) - 3} more errors"
+                    raise HTTPException(
+                        status_code=422,
+                        detail=f"No files could be converted. Errors: {
+                            error_summary}"
+                    )
+                else:
+                    raise HTTPException(
+                        status_code=422, detail="No files could be converted")
+
+            # Create ZIP file
+            zip_filename = f"converted_images_{Path(directory).name}.zip"
+            zip_path = os.path.join(temp_dir, zip_filename)
+
+            with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+                for file_path, arc_name in converted_files:
+                    zipf.write(file_path, arc_name)
+
+                # Add a summary file if there were errors
+                if conversion_errors:
+                    summary_content = "Conversion Summary\n" + "=" * 50 + "\n\n"
+                    summary_content += f"Successfully converted: {
+                        len(converted_files)} files\n"
+                    summary_content += f"Failed conversions: {
+                        len(conversion_errors)} files\n\n"
+                    summary_content += "Errors:\n" + \
+                        "\n".join(conversion_errors)
+
+                    summary_path = os.path.join(
+                        temp_dir, "conversion_summary.txt")
+                    with open(summary_path, 'w') as f:
+                        f.write(summary_content)
+                    zipf.write(summary_path, "conversion_summary.txt")
+
+            logger.info(f"Created ZIP file with {
+                        len(converted_files)} converted images")
+
+            # Return the ZIP file with background task to clean up temp directory
+
+            def cleanup_temp_dir():
+                try:
+                    shutil.rmtree(temp_dir)
+                    logger.info(f"Cleaned up temporary directory: {temp_dir}")
+                except Exception as e:
+                    logger.warning(f"Failed to clean up temporary directory {
+                                   temp_dir}: {e}")
+
+            # Note: We can't use BackgroundTasks here since it's not in the function signature
+            # Instead, we'll rely on the OS to clean up /tmp eventually
+            return FileResponse(
+                path=zip_path,
+                filename=zip_filename,
+                media_type='application/zip',
+                headers={
+                    "Content-Disposition": f"attachment; filename={zip_filename}"}
+            )
+
+        except HTTPException:
+            # Clean up temp directory on error
+            try:
+                shutil.rmtree(temp_dir)
+            except Exception:
+                pass
+            raise
+        except Exception as e:
+            # Clean up temp directory on error
+            try:
+                shutil.rmtree(temp_dir)
+            except Exception:
+                pass
+            raise
+
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error in download_converted_images: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Internal server error: {str(e)}")
 
 
 @app.get("/api/health")

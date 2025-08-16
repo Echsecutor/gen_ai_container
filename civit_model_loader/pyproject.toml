@@ -1,0 +1,18 @@
+[tool.autopep8]
+max_line_length = 120
+ignore = ["E501", "W503"]
+aggressive = 1
+experimental = false
+
+[tool.black]
+line-length = 120
+target-version = ['py311']
+skip-string-normalization = true
+
+[tool.isort]
+profile = "black"
+line_length = 120
+
+[tool.flake8]
+max-line-length = 120
+ignore = ["E501", "W503", "E203"]

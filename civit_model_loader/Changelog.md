@@ -2,6 +2,23 @@
 
 ## WIP
 
+- Added new API endpoint for downloading converted images as ZIP file
+
+  - `GET /api/download-converted-images?directory=/path/to/images` endpoint scans directory for PNG files
+  - Converts all InvokeAI generated images to Automatic1111 format using converter module
+  - Returns ZIP file containing converted images with `_a1111.png` suffix
+  - Includes conversion summary file if any errors occur during processing
+  - Default directory is `/workspace/output/images` (configurable via query parameter)
+  - Proper error handling for missing directories, no PNG files, and conversion failures
+  - Temporary files are cleaned up automatically after download
+  - Added Pillow dependency to requirements.txt for image processing
+
+- Fixed syntax errors in converter.py caused by autopep8 formatter
+
+  - Fixed broken f-string literals that were incorrectly split across multiple lines
+  - Added .autopep8 and pyproject.toml configuration files to prevent future formatting issues
+  - Configured linter to preserve string literal integrity while maintaining code quality
+
 - Added standalone converter functions for InvokeAI to Automatic1111 metadata conversion
 
   - Extracted `convert_image_metadata()` function from main converter logic for programmatic use
