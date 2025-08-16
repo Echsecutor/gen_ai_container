@@ -16,6 +16,15 @@
         </header>
 
         <div class="main-content">
+            <!-- Configuration Section -->
+            <section class="config-section">
+                <h2>Configuration</h2>
+                <div class="config-controls">
+                    <button id="exportConfig">Export Config</button>
+                    <input type="file" id="importConfig" accept=".json" style="display: none;">
+                    <button id="importConfigBtn">Import Config</button>
+                </div>
+            </section>
             <!-- API Token Section -->
             <section class="token-section">
                 <h2>API Configuration</h2>
@@ -99,9 +108,6 @@
                 <h2>Downloaded Models</h2>
                 <div class="downloaded-controls">
                     <button id="refreshDownloaded">Refresh</button>
-                    <button id="exportConfig">Export Config</button>
-                    <input type="file" id="importConfig" accept=".json" style="display: none;">
-                    <button id="importConfigBtn">Import Config</button>
                 </div>
                 <div id="downloadedModels" class="downloaded-models">
                     <!-- Downloaded models will be populated here -->

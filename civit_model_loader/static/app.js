@@ -5,7 +5,7 @@
 
 // Import all modules
 import { testApiToken } from "./js/api.js";
-import { exportConfig, importConfig } from "./js/config.js";
+import "./js/config.js"; // Import to initialize ConfigManager
 import {
   cancelDownload,
   downloadModel,
@@ -87,12 +87,7 @@ class App {
     // Downloaded models
     this.addEventListener("refreshDownloaded", "click", loadDownloadedModels);
 
-    // Configuration
-    this.addEventListener("exportConfig", "click", exportConfig);
-    this.addEventListener("importConfigBtn", "click", () => {
-      document.getElementById("importConfig")?.click();
-    });
-    this.addEventListener("importConfig", "change", importConfig);
+    // Configuration - handled by ConfigManager in config.js
 
     // Modal close handlers (for backward compatibility)
     const closeBtn = document.querySelector(".close");

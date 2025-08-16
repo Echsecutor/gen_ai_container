@@ -2,6 +2,21 @@
 
 ## WIP
 
+- Fixed duplicate event handlers causing import config dialog to open twice and export config to download twice
+
+  - Removed duplicate event listener setup in `app.js` for configuration buttons
+  - Configuration functionality is now handled exclusively by `ConfigManager` in `config.js`
+  - Import config file dialog now opens only once when clicking the import button
+  - Export config now downloads the file only once when clicking the export button
+  - Added proper module import to ensure `ConfigManager` is initialized on page load
+
+- Moved export/import config buttons to dedicated configuration section at top of page
+
+  - Created new "Configuration" section above API Configuration section
+  - Relocated export and import config buttons from Downloaded Models section to new top-level configuration area
+  - Improved UI organization by grouping configuration controls together
+  - Simplified Downloaded Models section to focus on model management with only refresh button
+
 - Added trigger words (trainedWords) display and storage functionality
 
   - Updated Pydantic models to include `trainedWords` field in `CivitaiModelVersion`
