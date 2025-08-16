@@ -6,6 +6,7 @@ import { getModelDetails } from "./api.js";
 import { modalManager, openImageModal, showLoading } from "./ui.js";
 import {
   copyToClipboard,
+  escapeForOnclick,
   escapeHtml,
   formatFileSize,
   sanitizeHtml,
@@ -321,10 +322,7 @@ class ModelManager {
     const fileSize = formatFileSize(file.sizeKB * 1024);
     const safePreviewUrl = escapeHtml(previewImageUrl || "");
     const safeFilename = escapeHtml(file.name);
-    const safeTriggerWords = JSON.stringify(triggerWords || []).replace(
-      /'/g,
-      "\\'"
-    );
+    const safeTriggerWords = escapeForOnclick(triggerWords || []);
 
     return `
       <div class="file-item">

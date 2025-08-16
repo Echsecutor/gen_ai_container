@@ -15,108 +15,131 @@ export function escapeHtml(text) {
 }
 
 /**
- * Sanitizes HTML content, allowing only safe tags and attributes
+ * Escapes a JavaScript value for safe use in HTML onclick attributes
+ * @param {any} value - The value to escape (will be JSON.stringified)
+ * @returns {string} - The escaped value ready for use in HTML attributes
+ */
+export function escapeForOnclick(value) {
+  if (value === null || value === undefined) return "null";
+
+  try {
+    // Convert to JSON string first
+    const jsonString = JSON.stringify(value);
+
+    // Escape for use in HTML attributes
+    return jsonString
+      .replace(/\\/g, "\\\\") // Escape backslashes
+      .replace(/'/g, "\\'") // Escape single quotes
+      .replace(/"/g, "&quot;") // Escape double quotes for HTML
+      .replace(/\n/g, "\\n") // Escape newlines
+      .replace(/\r/g, "\\r") // Escape carriage returns
+      .replace(/\t/g, "\\t"); // Escape tabs
+  } catch (error) {
+    console.warn("Failed to escape value for onclick:", error);
+    return "null";
+  }
+}
+
+/**
+ * Sanitizes HTML content using DOMPurify, allowing only safe tags and attributes
  * @param {string} html - The HTML to sanitize
  * @returns {string} - The sanitized HTML
  */
 export function sanitizeHtml(html) {
   if (!html) return "";
 
-  // Create a temporary DOM element to parse the HTML
-  const temp = document.createElement("div");
-  temp.innerHTML = html;
+  // Check if DOMPurify is available
+  if (typeof DOMPurify === "undefined") {
+    console.warn(
+      "DOMPurify not available, falling back to basic text extraction"
+    );
+    // Fallback: return only text content if DOMPurify isn't loaded
+    const temp = document.createElement("div");
+    temp.innerHTML = html;
+    return escapeHtml(temp.textContent || temp.innerText || "");
+  }
 
-  // Define allowed tags and their allowed attributes
-  const allowedTags = {
-    p: [],
-    br: [],
-    strong: [],
-    b: [],
-    em: [],
-    i: [],
-    u: [],
-    h1: [],
-    h2: [],
-    h3: [],
-    h4: [],
-    h5: [],
-    h6: [],
-    ul: [],
-    ol: [],
-    li: [],
-    blockquote: [],
-    code: [],
-    pre: [],
-    span: ["style"],
-    div: ["style"],
-    a: ["href", "target"],
-    img: ["src", "alt", "width", "height"],
+  // DOMPurify configuration for Civitai content
+  const config = {
+    // Allow these HTML tags
+    ALLOWED_TAGS: [
+      "p",
+      "br",
+      "strong",
+      "b",
+      "em",
+      "i",
+      "u",
+      "h1",
+      "h2",
+      "h3",
+      "h4",
+      "h5",
+      "h6",
+      "ul",
+      "ol",
+      "li",
+      "blockquote",
+      "code",
+      "pre",
+      "span",
+      "div",
+      "a",
+      "img",
+    ],
+    // Allow these attributes
+    ALLOWED_ATTR: [
+      "href",
+      "target",
+      "src",
+      "alt",
+      "width",
+      "height",
+      "style",
+      "class",
+      "id",
+    ],
+    // Allow only safe URLs for links and images
+    ALLOWED_URI_REGEXP:
+      /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp|data):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
+    // Don't allow any SVG content
+    USE_PROFILES: { html: true },
+    // Forbid tags that could be used for XSS
+    FORBID_TAGS: [
+      "script",
+      "object",
+      "embed",
+      "form",
+      "input",
+      "textarea",
+      "button",
+    ],
+    // Forbid dangerous attributes
+    FORBID_ATTR: [
+      "onerror",
+      "onload",
+      "onclick",
+      "onmouseover",
+      "onfocus",
+      "onblur",
+    ],
+    // Keep whitespace and line breaks
+    KEEP_CONTENT: true,
+    // Sanitize style attributes
+    ALLOW_UNKNOWN_PROTOCOLS: false,
+    // Remove any data-* attributes that could be used for DOM clobbering
+    ALLOW_DATA_ATTR: false,
   };
 
-  // Recursively sanitize elements
-  function sanitizeElement(element) {
-    const tagName = element.tagName.toLowerCase();
-
-    // If tag is not allowed, replace with its text content
-    if (!allowedTags.hasOwnProperty(tagName)) {
-      return document.createTextNode(element.textContent || "");
-    }
-
-    // Create a new clean element
-    const cleanElement = document.createElement(tagName);
-
-    // Copy allowed attributes
-    const allowedAttrs = allowedTags[tagName];
-    for (let attr of element.attributes) {
-      if (allowedAttrs.includes(attr.name.toLowerCase())) {
-        // Additional validation for specific attributes
-        if (attr.name.toLowerCase() === "href") {
-          // Only allow http/https links
-          if (attr.value.match(/^https?:\/\//)) {
-            cleanElement.setAttribute(attr.name, attr.value);
-          }
-        } else if (attr.name.toLowerCase() === "src") {
-          // Only allow http/https/data images
-          if (attr.value.match(/^(https?:\/\/|data:image\/)/)) {
-            cleanElement.setAttribute(attr.name, attr.value);
-          }
-        } else if (attr.name.toLowerCase() === "style") {
-          // Basic style sanitization - only allow safe CSS properties
-          const safeStyle = attr.value.replace(/[^a-zA-Z0-9\s:;.\-#%()]/g, "");
-          if (safeStyle) {
-            cleanElement.setAttribute(attr.name, safeStyle);
-          }
-        } else {
-          cleanElement.setAttribute(attr.name, attr.value);
-        }
-      }
-    }
-
-    // Recursively process child nodes
-    for (let child of element.childNodes) {
-      if (child.nodeType === Node.TEXT_NODE) {
-        cleanElement.appendChild(document.createTextNode(child.textContent));
-      } else if (child.nodeType === Node.ELEMENT_NODE) {
-        const sanitizedChild = sanitizeElement(child);
-        cleanElement.appendChild(sanitizedChild);
-      }
-    }
-
-    return cleanElement;
+  try {
+    return DOMPurify.sanitize(html, config);
+  } catch (error) {
+    console.error("DOMPurify sanitization failed:", error);
+    // Fallback to basic text extraction on error
+    const temp = document.createElement("div");
+    temp.innerHTML = html;
+    return escapeHtml(temp.textContent || temp.innerText || "");
   }
-
-  // Process all child elements
-  const result = document.createElement("div");
-  for (let child of temp.childNodes) {
-    if (child.nodeType === Node.TEXT_NODE) {
-      result.appendChild(document.createTextNode(child.textContent));
-    } else if (child.nodeType === Node.ELEMENT_NODE) {
-      const sanitizedChild = sanitizeElement(child);
-      result.appendChild(sanitizedChild);
-    }
-  }
-
-  return result.innerHTML;
 }
 
 /**

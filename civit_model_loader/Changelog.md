@@ -2,6 +2,23 @@
 
 ## WIP
 
+- Fixed console errors and JavaScript syntax issues
+
+  - Fixed DOM warning about password field not being in a form by wrapping API token input in a `<form>` element
+  - Added favicon.svg to prevent 404 errors for missing favicon.ico
+  - Fixed "Uncaught SyntaxError: Unexpected end of input" errors when downloading models with special characters in trigger words
+  - Added `escapeForOnclick()` function to properly escape JavaScript values for use in HTML onclick attributes
+  - Updated download and model display functions to use robust escaping for trigger words and other dynamic data
+
+- Enhanced HTML sanitization security using DOMPurify
+
+  - Replaced custom `sanitizeHtml()` function with DOMPurify-based implementation for industry-standard XSS protection
+  - Added DOMPurify 3.0.7 CDN dependency for secure HTML content sanitization
+  - Configured DOMPurify with strict security settings: limited allowed tags/attributes, URL validation, forbidden dangerous elements
+  - Added fallback to plain text extraction if DOMPurify fails to load or encounters errors
+  - Audited all content insertion points to ensure proper sanitization of web-fetched content from Civitai API
+  - All model descriptions, version descriptions, and user-generated content now properly sanitized against XSS attacks
+
 - Fixed duplicate event handlers causing import config dialog to open twice and export config to download twice
 
   - Removed duplicate event listener setup in `app.js` for configuration buttons

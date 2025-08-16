@@ -10,7 +10,7 @@ import {
 } from "./api.js";
 import { addDownloadedModel, appState, getDownloadedModels } from "./state.js";
 import { ProgressBar, showToast } from "./ui.js";
-import { escapeHtml, formatFileSize } from "./utils.js";
+import { escapeForOnclick, escapeHtml, formatFileSize } from "./utils.js";
 
 /**
  * Download manager class
@@ -271,10 +271,7 @@ class DownloadManager {
     const downloadDate = new Date(model.timestamp).toLocaleDateString();
     const safeImageUrl = escapeHtml(model.imageUrl || "");
     const safeFilename = escapeHtml(model.filename);
-    const safeTriggerWords = JSON.stringify(model.triggerWords || []).replace(
-      /'/g,
-      "\\'"
-    );
+    const safeTriggerWords = escapeForOnclick(model.triggerWords || []);
 
     // File existence status
     let fileStatusHtml = "";

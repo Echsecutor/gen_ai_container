@@ -5,7 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Civitai Model Loader</title>
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
     <link rel="stylesheet" href="/static/styles.css">
+    <!-- DOMPurify for secure HTML sanitization -->
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.7/dist/purify.min.js" crossorigin="anonymous"></script>
 </head>
 
 <body>
@@ -43,9 +46,11 @@
 
                 <!-- Token input state (visible by default) -->
                 <div id="tokenInputState" class="token-input-group">
-                    <input type="password" id="apiToken" placeholder="Enter your Civitai API token">
-                    <button id="saveToken">Save Token</button>
-                    <button id="testToken">Test Token</button>
+                    <form onsubmit="return false;">
+                        <input type="password" id="apiToken" placeholder="Enter your Civitai API token">
+                        <button type="button" id="saveToken">Save Token</button>
+                        <button type="button" id="testToken">Test Token</button>
+                    </form>
                 </div>
 
                 <p class="token-help">
