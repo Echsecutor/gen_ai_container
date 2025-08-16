@@ -2,6 +2,18 @@
 
 ## WIP
 
+- Added standalone converter functions for InvokeAI to Automatic1111 metadata conversion
+
+  - Extracted `convert_image_metadata()` function from main converter logic for programmatic use
+  - Added `convert_invokeai_to_a1111()` simplified wrapper function that automatically loads configuration and hash cache
+  - Both functions return `(success: bool, message: str)` tuple for proper error handling
+  - Functions can be imported and used independently of the command-line tool
+  - Added comprehensive test script `tests/test_converter.py` with validation against provided test images
+  - Functions handle all metadata types: base parameters, model hashes, VAE, LoRA, and inpainting scenarios
+  - Proper error handling for missing files, invalid metadata, and configuration issues
+  - Refactored main() function to use extracted functions, eliminating code duplication
+  - Original command-line functionality preserved while reducing maintenance overhead
+
 - Fixed console errors and JavaScript syntax issues
 
   - Fixed DOM warning about password field not being in a form by wrapping API token input in a `<form>` element

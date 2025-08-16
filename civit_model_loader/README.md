@@ -67,3 +67,14 @@ python main.py
 1. Visit [Civitai Account Settings](https://civitai.com/user/account)
 2. Generate an API token
 3. Enter it in the web interface
+
+## Metadata Converter
+
+This project includes a metadata conversion utility (`converter.py`) that converts InvokeAI generated image metadata to Automatic1111 format for easy upload to Civitai. The converter is originally based on the work from [kraussian/invoke-civitai](https://github.com/kraussian/invoke-civitai) and has been enhanced with:
+
+- Standalone function APIs for programmatic use
+- Comprehensive test suite with real test images
+- Improved error handling and validation
+- Code deduplication and refactoring
+
+The converter supports all metadata types including base parameters, model hashes, VAE, LoRA, and inpainting scenarios. See the `converter.py` file for usage examples and API documentation.
