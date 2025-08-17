@@ -41,10 +41,16 @@ sampler_info = {
 }
 
 
-def save_model_hash(basename: str, model_hash: str, hash_cache: Any) -> None:
+def save_model_hash(basename: str, model_hash: str, hash_cache: Any, cache_dir: str = None) -> None:
     # Save calculated model hash to cache so that it can be quickly recalled later
     hash_cache[basename] = model_hash
-    with open("./hash_cache.json", "w") as f:
+    
+    # Use /workspace as default if available, otherwise current directory
+    if cache_dir is None:
+        cache_dir = "/workspace" if os.path.exists("/workspace") else "."
+    
+    cache_file = os.path.join(cache_dir, "hash_cache.json")
+    with open(cache_file, "w") as f:
         f.write(json.dumps(hash_cache, indent=4))
 
 # From Automatic1111 source code (./modules/hashes.py)
@@ -63,7 +69,7 @@ def calculate_sha256(filename: str) -> str:
         return "NOFILE"
 
 
-def calculate_shorthash(filename: str, hash_cache: Any) -> str:
+def calculate_shorthash(filename: str, hash_cache: Any, cache_dir: str = None) -> str:
     if os.path.basename(filename) in hash_cache and "NOFILE" != hash_cache[os.path.basename(filename)]:
         shorthash = hash_cache[os.path.basename(filename)]
     else:
@@ -71,7 +77,7 @@ def calculate_shorthash(filename: str, hash_cache: Any) -> str:
                     f"{os.path.basename(filename)}. This will take a few seconds...")
         longhash = calculate_sha256(filename)
         shorthash = longhash[0:10]
-        save_model_hash(os.path.basename(filename), shorthash, hash_cache)
+        save_model_hash(os.path.basename(filename), shorthash, hash_cache, cache_dir)
     return shorthash
 
 
@@ -103,13 +109,18 @@ def main() -> None:
 
     args = parse_args()
 
-    if os.path.exists("./invokeai_cfg.json"):
-        with open("./invokeai_cfg.json", "r") as f:
+    # Use /workspace as config directory if available, otherwise current directory
+    config_dir = "/workspace" if os.path.exists("/workspace") else "."
+    
+    config_file = os.path.join(config_dir, "invokeai_cfg.json")
+    if os.path.exists(config_file):
+        with open(config_file, "r") as f:
             logger.info("    Config file found")
             invokeai_cfg = json.load(f)
 
-    if os.path.exists("./hash_cache.json"):
-        with open("./hash_cache.json", "r") as f:
+    cache_file = os.path.join(config_dir, "hash_cache.json")
+    if os.path.exists(cache_file):
+        with open(cache_file, "r") as f:
             logger.info("    Hash cache found")
             hash_cache = json.load(f)
 
@@ -123,7 +134,7 @@ def main() -> None:
 
         # Use the extracted function to do the conversion
         success, message = convert_image_metadata(
-            filename, new_filename, invokeai_cfg, hash_cache)
+            filename, new_filename, invokeai_cfg, hash_cache, config_dir)
 
         if success:
             successes += 1
@@ -135,7 +146,7 @@ def main() -> None:
                 f"{successes} / {file_count} files successfully converted.")
 
 
-def convert_image_metadata(input_file: str, output_file: str, invokeai_cfg: dict = None, hash_cache: dict = None) -> tuple[bool, str]:
+def convert_image_metadata(input_file: str, output_file: str, invokeai_cfg: dict = None, hash_cache: dict = None, cache_dir: str = None) -> tuple[bool, str]:
     """
     Convert InvokeAI generated image metadata to Automatic1111 format.
 
@@ -144,6 +155,7 @@ def convert_image_metadata(input_file: str, output_file: str, invokeai_cfg: dict
         output_file (str): Path where the converted file should be saved
         invokeai_cfg (dict, optional): Configuration dictionary with model folder paths
         hash_cache (dict, optional): Cache for previously calculated model hashes
+        cache_dir (str, optional): Directory for config and cache files. Defaults to /workspace if available, otherwise current directory
 
     Returns:
         tuple[bool, str]: (success, message) - True if successful, False if failed with error message
@@ -153,6 +165,8 @@ def convert_image_metadata(input_file: str, output_file: str, invokeai_cfg: dict
         invokeai_cfg = {}
     if hash_cache is None:
         hash_cache = {}
+    if cache_dir is None:
+        cache_dir = "/workspace" if os.path.exists("/workspace") else "."
 
     try:
         # Load file and import metadata
@@ -217,14 +231,14 @@ def convert_image_metadata(input_file: str, output_file: str, invokeai_cfg: dict
             model_hash = json_data['model']['hash'].replace('sha256:', '')[:10]
             meta_mhash = 'Model hash: ' + model_hash
             save_model_hash(
-                f"{json_data['model']['name']}.safetensors", model_hash, hash_cache)
+                f"{json_data['model']['name']}.safetensors", model_hash, hash_cache, cache_dir)
         else:
             logger.info(
                 "        Model hash is not sha256! Attempting to calculate hash from model file")
             if 'model_folder' in invokeai_cfg:
                 model_file = f"{invokeai_cfg['model_folder']}/" \
                     f"{json_data['model']['name']}.safetensors"
-                model_hash = calculate_shorthash(model_file, hash_cache)
+                model_hash = calculate_shorthash(model_file, hash_cache, cache_dir)
                 if model_hash != "NOFILE":
                     meta_mhash = 'Model hash: ' + model_hash
                 else:
@@ -246,14 +260,14 @@ def convert_image_metadata(input_file: str, output_file: str, invokeai_cfg: dict
                     :10]
                 meta_vhash = 'VAE hash: ' + model_hash
                 save_model_hash(
-                    f"{json_data['vae']['name']}.safetensors", model_hash, hash_cache)
+                    f"{json_data['vae']['name']}.safetensors", model_hash, hash_cache, cache_dir)
             else:
                 logger.info(
                     "        Model hash is not sha256! Attempting to calculate hash from model file")
                 if 'vae_folder' in invokeai_cfg:
                     model_file = f"{invokeai_cfg['vae_folder']}/" \
                         f"{json_data['vae']['name']}.safetensors"
-                    model_hash = calculate_shorthash(model_file, hash_cache)
+                    model_hash = calculate_shorthash(model_file, hash_cache, cache_dir)
                     if model_hash != "NOFILE":
                         meta_vhash = 'VAE hash: ' + model_hash
                     else:
@@ -278,14 +292,14 @@ def convert_image_metadata(input_file: str, output_file: str, invokeai_cfg: dict
                         :10]
                     lora_hash = model_hash
                     save_model_hash(
-                        f"{lora['model']['name']}.safetensors", model_hash, hash_cache)
+                        f"{lora['model']['name']}.safetensors", model_hash, hash_cache, cache_dir)
                 else:
                     logger.info(
                         "        Model hash is not sha256! Attempting to calculate hash from model file")
                     if 'lora_folder' in invokeai_cfg:
                         model_file = f"{invokeai_cfg['lora_folder']}/" \
                             f"{lora['model']['name']}.safetensors"
-                        lora_hash = calculate_shorthash(model_file, hash_cache)
+                        lora_hash = calculate_shorthash(model_file, hash_cache, cache_dir)
                         if lora_hash == "NOFILE":
                             error_msg = f"ERROR: Model file " \
                                 f"{model_file} not found!"
@@ -330,15 +344,16 @@ def convert_image_metadata(input_file: str, output_file: str, invokeai_cfg: dict
         return False, error_msg
 
 
-def convert_invokeai_to_a1111(input_file: str, output_file: str) -> tuple[bool, str]:
+def convert_invokeai_to_a1111(input_file: str, output_file: str, cache_dir: str = None) -> tuple[bool, str]:
     """
     Simplified function to convert InvokeAI generated image metadata to Automatic1111 format.
 
-    This function automatically loads configuration and hash cache from the working directory.
+    This function automatically loads configuration and hash cache from the specified directory.
 
     Args:
         input_file (str): Path to the input PNG file generated by InvokeAI
         output_file (str): Path where the converted file should be saved
+        cache_dir (str, optional): Directory for config and cache files. Defaults to /workspace if available, otherwise current directory
 
     Returns:
         tuple[bool, str]: (success, message) - True if successful, False if failed with error message
@@ -350,11 +365,16 @@ def convert_invokeai_to_a1111(input_file: str, output_file: str) -> tuple[bool, 
         else:
             print(f"Error: {message}")
     """
+    # Use /workspace as config directory if available, otherwise current directory
+    if cache_dir is None:
+        cache_dir = "/workspace" if os.path.exists("/workspace") else "."
+    
     # Load configuration if available
     invokeai_cfg = {}
-    if os.path.exists("./invokeai_cfg.json"):
+    config_file = os.path.join(cache_dir, "invokeai_cfg.json")
+    if os.path.exists(config_file):
         try:
-            with open("./invokeai_cfg.json", "r") as f:
+            with open(config_file, "r") as f:
                 invokeai_cfg = json.load(f)
                 logger.info("    Config file found and loaded")
         except Exception as e:
@@ -362,15 +382,16 @@ def convert_invokeai_to_a1111(input_file: str, output_file: str) -> tuple[bool, 
 
     # Load hash cache if available
     hash_cache = {}
-    if os.path.exists("./hash_cache.json"):
+    cache_file = os.path.join(cache_dir, "hash_cache.json")
+    if os.path.exists(cache_file):
         try:
-            with open("./hash_cache.json", "r") as f:
+            with open(cache_file, "r") as f:
                 hash_cache = json.load(f)
                 logger.info("    Hash cache found and loaded")
         except Exception as e:
             logger.warning(f"    Failed to load hash cache: {e}")
 
-    return convert_image_metadata(input_file, output_file, invokeai_cfg, hash_cache)
+    return convert_image_metadata(input_file, output_file, invokeai_cfg, hash_cache, cache_dir)
 
 
 if __name__ == "__main__":

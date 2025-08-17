@@ -61,7 +61,7 @@ class App {
   setupEventListeners() {
     // API Token - Input state
     this.addEventListener("saveToken", "click", this.saveApiToken.bind(this));
-    this.addEventListener("testToken", "click", testApiToken);
+    this.addEventListener("testToken", "click", () => testApiToken());
 
     // API Token - Loaded state
     this.addEventListener(
@@ -69,7 +69,7 @@ class App {
       "click",
       this.showTokenInput.bind(this)
     );
-    this.addEventListener("testTokenLoaded", "click", testApiToken);
+    this.addEventListener("testTokenLoaded", "click", () => testApiToken());
 
     // Search
     this.addEventListener("searchBtn", "click", performSearch);

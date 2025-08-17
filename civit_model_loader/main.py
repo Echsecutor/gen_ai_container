@@ -261,9 +261,9 @@ async def download_converted_images(directory: str = Query(default="/workspace/o
                     output_filename = f"{base_name}_a1111.png"
                     output_path = os.path.join(temp_dir, output_filename)
 
-                    # Convert the image metadata
+                    # Convert the image metadata - use /workspace for config/cache files
                     success, message = convert_invokeai_to_a1111(
-                        png_file, output_path)
+                        png_file, output_path, "/workspace")
 
                     if success:
                         converted_files.append((output_path, output_filename))

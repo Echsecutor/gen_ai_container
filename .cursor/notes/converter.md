@@ -34,7 +34,7 @@ The `civit_model_loader/converter.py` module provides functionality to convert I
 - Comprehensive error handling with specific error messages
 - Model hash calculation and caching functionality
 
-#### `convert_invokeai_to_a1111(input_file, output_file)`
+#### `convert_invokeai_to_a1111(input_file, output_file, cache_dir=None)`
 
 **Purpose**: Simplified wrapper function for easy usage
 
@@ -42,6 +42,7 @@ The `civit_model_loader/converter.py` module provides functionality to convert I
 
 - `input_file` (str): Path to InvokeAI PNG file
 - `output_file` (str): Path for converted output file
+- `cache_dir` (str, optional): Directory for config and cache files. Defaults to `/workspace` if available, otherwise current directory
 
 **Returns**: `(success: bool, message: str)` tuple
 
@@ -50,7 +51,7 @@ The `civit_model_loader/converter.py` module provides functionality to convert I
 - Automatically loads configuration from `invokeai_cfg.json`
 - Automatically loads hash cache from `hash_cache.json`
 - Graceful fallback when config files are missing
-- Simple two-parameter interface for common use cases
+- Simple interface with configurable cache directory for cloud environments
 
 ## Metadata Conversion Process
 
@@ -158,6 +159,7 @@ success, message = convert_image_metadata("input.png", "output.png", config, cac
 - **Hash Caching**: Avoids recalculating expensive model hashes
 - **Backward Compatible**: Original CLI functionality preserved
 - **Comprehensive Testing**: Validated against real test images
+- **Cloud Environment Support**: Uses configurable cache directory with automatic `/workspace` fallback for Docker containers
 
 ## Implementation Notes
 

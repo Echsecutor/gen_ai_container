@@ -2,6 +2,20 @@
 
 ## WIP
 
+- Fixed converter permission errors in cloud environments
+
+  - Modified `converter.py` to use `/workspace` directory for config and cache files instead of current working directory
+  - Added `cache_dir` parameter to all converter functions with automatic fallback to `/workspace` when available
+  - Prevents "Permission denied" errors when running in containers where current directory is read-only
+  - Updated `main.py` to explicitly pass `/workspace` as cache directory for image conversion endpoint
+  - All converter functions now work correctly in Docker container environment
+
+- Fixed test token button 500 error caused by event object being passed as API token
+
+  - Fixed event handlers for both "Test Token" buttons to call `testApiToken()` without passing the DOM event object
+  - Backend was receiving `{'isTrusted': True}` instead of token string, causing Pydantic validation error
+  - Wrapped `testApiToken` calls in anonymous functions to prevent event object parameter passing
+
 - Fixed syntax errors in Python files caused by unterminated string literals
 
   - Fixed broken f-string continuations in `main.py`, `converter.py`, and test files
