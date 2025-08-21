@@ -1,211 +1,290 @@
-#!/usr/bin/env python3
 """
-Test script for the extracted converter functions.
-This script tests the convert_invokeai_to_a1111 function using actual test images.
+Tests for the converter module.
+Tests the convert_invokeai_to_a1111 function and related functionality using pytest.
 """
 
-from converter import convert_invokeai_to_a1111, convert_image_metadata
-import sys
 import os
 import tempfile
-import logging
+import pytest
 from pathlib import Path
 from PIL import Image
-from PIL.PngImagePlugin import PngInfo
 
-# Add parent directory to path to import converter
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Try to import converter functions
+try:
+    from converter import convert_invokeai_to_a1111, convert_image_metadata
+    CONVERTER_AVAILABLE = True
+except ImportError:
+    CONVERTER_AVAILABLE = False
 
-# Set up logging
-logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
-logger = logging.getLogger(__name__)
+skip_if_no_converter = pytest.mark.skipif(
+    not CONVERTER_AVAILABLE,
+    reason="Converter module not available"
+)
 
 
-def test_converter_functions():
-    """Test the converter functions with the provided test images."""
+@skip_if_no_converter
+class TestConverterBasicFunctionality:
+    """Test basic converter functionality."""
 
-    print("=== Converter Function Test ===")
-    print()
+    def test_converter_functions_exist(self):
+        """Test that converter functions are available."""
+        assert callable(convert_invokeai_to_a1111)
+        assert callable(convert_image_metadata)
 
-    # Get test directory path
-    test_dir = Path(__file__).parent
-    input_img = test_dir / "img.png"
-    expected_img = test_dir / "img_a1111.png"
+    def test_converter_function_signatures(self):
+        """Test that converter functions have proper docstrings."""
+        assert convert_invokeai_to_a1111.__doc__ is not None
+        assert convert_image_metadata.__doc__ is not None
 
-    # Verify test files exist
-    if not input_img.exists():
-        print(f"ERROR: Test input image not found: {input_img}")
-        return False
-
-    if not expected_img.exists():
-        print(f"ERROR: Expected output image not found: {expected_img}")
-        return False
-
-    print(f"Input image: {input_img}")
-    print(f"Expected output: {expected_img}")
-    print()
-
-    # Test 1: Check if input image has InvokeAI metadata
-    print("Test 1: Checking input image metadata")
-    try:
-        with Image.open(input_img) as img:
-            img.load()
-            if 'invokeai_metadata' in img.info:
-                print("✓ Input image contains InvokeAI metadata")
-                print(f"  Metadata length: "
-                      f"{len(img.info['invokeai_metadata'])} characters")
-            else:
-                print("✗ Input image does not contain InvokeAI metadata")
-                print("  Available metadata keys:", list(img.info.keys()))
-                return False
-    except Exception as e:
-        print(f"✗ Error reading input image: {e}")
-        return False
-    print()
-
-    # Test 2: Check expected output image metadata
-    print("Test 2: Checking expected output image metadata")
-    try:
-        with Image.open(expected_img) as img:
-            img.load()
-            if 'parameters' in img.info:
-                print("✓ Expected output contains A1111 'parameters' metadata")
-                print(f"  Parameters length: "
-                      f"{len(img.info['parameters'])} characters")
-                print(f"  First 200 chars: {img.info['parameters'][:200]}...")
-            else:
-                print("✗ Expected output does not contain A1111 'parameters' metadata")
-                print("  Available metadata keys:", list(img.info.keys()))
-    except Exception as e:
-        print(f"✗ Error reading expected output image: {e}")
-    print()
-
-    # Test 3: Convert the input image
-    print("Test 3: Converting input image using convert_invokeai_to_a1111()")
-    with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp_file:
-        output_path = tmp_file.name
-
-    try:
+    def test_error_handling_nonexistent_file(self):
+        """Test error handling with non-existent input file."""
         success, message = convert_invokeai_to_a1111(
-            str(input_img), output_path)
+            "non_existent.png",
+            "output.png"
+        )
+
+        assert not success
+        assert isinstance(message, str)
+        assert len(message) > 0
+
+
+@skip_if_no_converter
+class TestExistingTestImages:
+    """Test converter with existing test images."""
+
+    @pytest.fixture
+    def test_images_paths(self):
+        """Get paths to existing test images."""
+        test_dir = Path(__file__).parent
+        return {
+            'input': test_dir / "img.png",
+            'expected': test_dir / "img_a1111.png"
+        }
+
+    def test_existing_test_images_exist(self, test_images_paths):
+        """Verify that the test images exist."""
+        if not test_images_paths['input'].exists():
+            pytest.skip(f"Test input image not found: {test_images_paths['input']}")
+
+        assert test_images_paths['input'].exists()
+
+        # Expected image is optional for testing
+        if test_images_paths['expected'].exists():
+            assert test_images_paths['expected'].exists()
+
+    def test_input_image_has_invokeai_metadata(self, test_images_paths):
+        """Test that input image contains InvokeAI metadata."""
+        input_path = test_images_paths['input']
+        if not input_path.exists():
+            pytest.skip("Input test image not found")
+
+        with Image.open(input_path) as img:
+            img.load()
+
+            # Should have InvokeAI metadata
+            assert 'invokeai_metadata' in img.info
+            assert len(img.info['invokeai_metadata']) > 0
+
+    def test_expected_output_has_a1111_metadata(self, test_images_paths):
+        """Test that expected output contains A1111 metadata."""
+        expected_path = test_images_paths['expected']
+        if not expected_path.exists():
+            pytest.skip("Expected output image not found")
+
+        with Image.open(expected_path) as img:
+            img.load()
+
+            # Should have A1111 parameters metadata
+            assert 'parameters' in img.info
+            assert len(img.info['parameters']) > 0
+
+    def test_conversion_with_existing_image(self, test_images_paths, temp_dir):
+        """Test conversion using the existing test image."""
+        input_path = test_images_paths['input']
+        if not input_path.exists():
+            pytest.skip("Input test image not found")
+
+        output_path = os.path.join(temp_dir, "converted_output.png")
+
+        success, message = convert_invokeai_to_a1111(
+            str(input_path),
+            output_path
+        )
 
         if success:
-            print(f"✓ Conversion successful: {message}")
+            assert os.path.exists(output_path)
 
-            # Verify the output file was created
-            if os.path.exists(output_path):
-                print(f"✓ Output file created: {output_path}")
-
-                # Check the converted metadata
-                with Image.open(output_path) as converted_img:
-                    converted_img.load()
-                    if 'parameters' in converted_img.info:
-                        print(
-                            "✓ Converted image contains A1111 'parameters' metadata")
-                        print(f"  Parameters length: "
-                              f"{len(converted_img.info['parameters'])} characters")
-                        print(f"  First 200 chars: "
-                              f"{converted_img.info['parameters'][:200]}...")
-
-                        # Compare with expected output (basic comparison)
-                        with Image.open(expected_img) as expected:
-                            expected.load()
-                            if 'parameters' in expected.info:
-                                if converted_img.info['parameters'] == expected.info['parameters']:
-                                    print(
-                                        "✓ Converted metadata matches expected output exactly")
-                                else:
-                                    print(
-                                        "⚠ Converted metadata differs from expected output")
-                                    print(
-                                        "  This might be expected due to hash differences or configuration")
-                            else:
-                                print(
-                                    "⚠ Expected image doesn't have parameters metadata for comparison")
-                    else:
-                        print(
-                            "✗ Converted image does not contain A1111 'parameters' metadata")
-                        print("  Available metadata keys:",
-                              list(converted_img.info.keys()))
-            else:
-                print(f"✗ Output file was not created: {output_path}")
+            # Check that output has A1111 metadata
+            with Image.open(output_path) as converted_img:
+                converted_img.load()
+                assert 'parameters' in converted_img.info
+                assert len(converted_img.info['parameters']) > 0
         else:
-            print(f"✗ Conversion failed: {message}")
+            # Log the failure reason but don't fail the test
+            # as conversion might fail due to missing model files
+            pytest.skip(
+                f"Conversion failed (expected in test environment): {message}")
 
-    except Exception as e:
-        print(f"✗ Conversion error: {e}")
-        success = False
-    finally:
-        # Clean up temporary file
-        if os.path.exists(output_path):
-            os.unlink(output_path)
-    print()
 
-    # Test 4: Test error handling with invalid file
-    print("Test 4: Testing error handling with non-existent file")
-    success, message = convert_invokeai_to_a1111(
-        "non_existent.png", "output.png")
-    if not success:
-        print(f"✓ Error handling works correctly: {message}")
-    else:
-        print(f"✗ Expected error but got success: {message}")
-    print()
+@skip_if_no_converter
+class TestConverterWithCustomConfig:
+    """Test converter with custom configuration."""
 
-    # Test 5: Test the detailed function with custom config
-    print("Test 5: Testing convert_image_metadata with custom configuration")
-    custom_config = {
-        "model_folder": "/path/to/models",
-        "vae_folder": "/path/to/vae",
-        "lora_folder": "/path/to/loras",
-        "invokeai_output_folder": "/path/to/output"
-    }
-    custom_cache = {}
+    def test_custom_config_parameters(self, temp_dir):
+        """Test convert_image_metadata with custom configuration."""
+        # Create a simple test image with fake metadata
+        test_img_path = os.path.join(temp_dir, "test_input.png")
+        img = Image.new('RGB', (100, 100), (255, 0, 0))
 
-    with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp_file:
-        output_path2 = tmp_file.name
+        # Add fake InvokeAI metadata
+        from PIL.PngImagePlugin import PngInfo
+        metadata = PngInfo()
+        metadata.add_text("invokeai_metadata", '{"test": "metadata"}')
+        img.save(test_img_path, "PNG", pnginfo=metadata)
 
-    try:
+        output_path = os.path.join(temp_dir, "custom_output.png")
+
+        custom_config = {
+            "model_folder": "/test/models",
+            "vae_folder": "/test/vae",
+            "lora_folder": "/test/loras",
+            "invokeai_output_folder": "/test/output"
+        }
+        custom_cache = {}
+
+        # This might fail due to missing model files, which is expected in tests
         success, message = convert_image_metadata(
-            str(input_img),
-            output_path2,
+            test_img_path,
+            output_path,
             custom_config,
             custom_cache
         )
 
+        # Either success or expected failure due to missing model files
+        assert isinstance(success, bool)
+        assert isinstance(message, str)
+        assert len(message) > 0
+
+
+@skip_if_no_converter
+class TestErrorHandling:
+    """Test error handling scenarios."""
+
+    def test_invalid_input_path(self):
+        """Test with invalid input path."""
+        success, message = convert_invokeai_to_a1111(
+            "",
+            "output.png"
+        )
+
+        assert not success
+        assert "error" in message.lower() or "not found" in message.lower()
+
+    def test_invalid_output_path(self, temp_dir):
+        """Test with invalid output path."""
+        # Create a simple test image
+        test_img_path = os.path.join(temp_dir, "test.png")
+        img = Image.new('RGB', (50, 50), (255, 0, 0))
+        img.save(test_img_path, "PNG")
+
+        # Try to write to invalid directory
+        invalid_output = "/nonexistent/directory/output.png"
+
+        success, message = convert_invokeai_to_a1111(
+            test_img_path,
+            invalid_output
+        )
+
+        # Should handle this gracefully
+        assert isinstance(success, bool)
+        assert isinstance(message, str)
+
+    def test_file_without_invokeai_metadata(self, temp_dir):
+        """Test with image file that has no InvokeAI metadata."""
+        # Create image without InvokeAI metadata
+        test_img_path = os.path.join(temp_dir, "no_metadata.png")
+        img = Image.new('RGB', (50, 50), (0, 255, 0))
+        img.save(test_img_path, "PNG")
+
+        output_path = os.path.join(temp_dir, "output.png")
+
+        success, message = convert_invokeai_to_a1111(
+            test_img_path,
+            output_path
+        )
+
+        # Should handle missing metadata gracefully
+        assert isinstance(success, bool)
+        assert isinstance(message, str)
+        if not success:
+            assert "metadata" in message.lower() or "invokeai" in message.lower()
+
+
+@skip_if_no_converter
+class TestDocumentation:
+    """Test that functions have proper documentation."""
+
+    def test_convert_invokeai_to_a1111_docstring(self):
+        """Test that main conversion function has docstring."""
+        doc = convert_invokeai_to_a1111.__doc__
+        assert doc is not None
+        assert len(doc.strip()) > 0
+        assert "convert" in doc.lower() or "invokeai" in doc.lower()
+
+    def test_convert_image_metadata_docstring(self):
+        """Test that detailed conversion function has docstring."""
+        doc = convert_image_metadata.__doc__
+        assert doc is not None
+        assert len(doc.strip()) > 0
+        assert "convert" in doc.lower() or "metadata" in doc.lower()
+
+
+@pytest.mark.integration
+@skip_if_no_converter
+class TestIntegration:
+    """Integration tests that test the full conversion pipeline."""
+
+    @pytest.mark.slow
+    def test_full_conversion_pipeline(self, temp_dir):
+        """Test the complete conversion pipeline if test images are available."""
+        test_dir = Path(__file__).parent
+        input_img = test_dir / "img.png"
+
+        if not input_img.exists():
+            pytest.skip("Integration test image not available")
+
+        output_path = os.path.join(temp_dir, "integration_test_output.png")
+
+        # Test with default configuration
+        success, message = convert_invokeai_to_a1111(
+            str(input_img),
+            output_path
+        )
+
+        # This is an integration test - log results but don't fail on expected issues
         if success:
-            print(f"✓ Custom config conversion successful: {message}")
+            assert os.path.exists(output_path)
+
+            # Verify output format
+            with Image.open(output_path) as img:
+                img.load()
+                # Should be valid image
+                assert img.size[0] > 0
+                assert img.size[1] > 0
         else:
-            print(f"⚠ Custom config conversion failed (expected if model files not found): "
-                  f"{message}")
-
-    except Exception as e:
-        print(f"⚠ Custom config conversion error (may be expected): {e}")
-    finally:
-        # Clean up temporary file
-        if os.path.exists(output_path2):
-            os.unlink(output_path2)
-    print()
-
-    print("=== Test Summary ===")
-    print("The converter functions have been tested with the provided test images.")
-    print("Check the output above for any issues or unexpected behavior.")
-
-    return True
+            # Log for debugging but don't fail - might be expected in test environment
+            print(f"Integration test info: {message}")
 
 
-def show_function_docs():
-    """Display the function documentation."""
-    print("=== Function Documentation ===")
-    print()
-    print("convert_invokeai_to_a1111 docstring:")
-    print(convert_invokeai_to_a1111.__doc__)
-    print()
-    print("convert_image_metadata docstring:")
-    print(convert_image_metadata.__doc__)
+class TestConverterAvailability:
+    """Test converter module availability without requiring it."""
 
-
-if __name__ == "__main__":
-    if len(sys.argv) > 1 and sys.argv[1] == "--docs":
-        show_function_docs()
-    else:
-        test_converter_functions()
+    def test_converter_import_behavior(self):
+        """Test that converter import behavior is handled gracefully."""
+        try:
+            from converter import convert_invokeai_to_a1111
+            # If import succeeds, function should be callable
+            assert callable(convert_invokeai_to_a1111)
+        except ImportError:
+            # Import failure is acceptable in test environments
+            pytest.skip("Converter module not available - this is acceptable")

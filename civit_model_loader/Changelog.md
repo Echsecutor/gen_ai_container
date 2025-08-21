@@ -2,6 +2,37 @@
 
 ## WIP
 
+- Refactored test suite to use pytest framework with improved organization and maintainability
+
+  - Migrated all tests from custom test runners to pytest conventions with proper test discovery
+  - Added pytest configuration in `pyproject.toml` with async support and test markers
+  - Created `conftest.py` with shared fixtures for temporary directories, test images, and mock data
+  - Refactored `test_thumbnail.py` with pytest classes, parametrized tests, and proper skip decorators
+  - Refactored `test_list_files_endpoint.py` with async test support and integration test markers
+  - Refactored `test_converter.py` with comprehensive error handling and conditional test execution
+  - Refactored `test_api.py` and `test_client.py` with proper API integration test patterns
+  - Added intelligent test skipping when optional dependencies (FastAPI, thumbnail module) are unavailable
+  - Removed legacy `test_all.py` runner in favor of pytest's automatic test discovery
+  - Updated test documentation with pytest commands, markers, and development workflow
+  - Added requirements for `pytest==7.4.3` and `pytest-asyncio==0.21.1` for async test support
+  - Organized tests into logical classes and added comprehensive docstrings
+  - Added performance markers for slow tests and integration markers for API tests
+  - Deduplicated test utilities and improved test isolation with proper fixture cleanup
+
+- Added thumbnail gallery to Image Conversion section for browsing images before conversion
+
+  - Integrated with existing `/api/list-files` endpoint to display thumbnails of images in the conversion directory
+  - New thumbnail gallery shows grid view of all images in the specified directory with 150x150px thumbnails
+  - Click-to-view lightbox modal with navigation between images using arrow keys or navigation buttons
+  - Auto-refresh gallery when directory path changes with debounced input handling
+  - Added "Refresh Gallery" button for manual refresh of thumbnail display
+  - Responsive grid layout adapts to different screen sizes (200px thumbnails on desktop, 150px on mobile)
+  - Gallery status indicators show loading states, error messages, and image counts
+  - Keyboard navigation support: Escape to close, Left/Right arrows to navigate between images
+  - Smart image handling with fallback for unavailable thumbnails and error states
+  - Seamless integration with existing image conversion workflow and UI styling
+  - Mobile-friendly lightbox with touch-friendly navigation controls
+
 - Added new `/api/list-files` endpoint for server-side file browsing with image thumbnails
 
   - New endpoint accepts `folder` query parameter (default: `/workspace/output/images`) to list files in any server-side directory

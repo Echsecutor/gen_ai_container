@@ -18,7 +18,7 @@ This is a Docker container project for AI/ML tools, specifically focused on Invo
 
 - [`civit_model_loader.md`](civit_model_loader.md) - Complete implementation of Civitai model loader (frontend+backend)
 - [`converter.md`](converter.md) - InvokeAI to Automatic1111 metadata conversion functions and testing
-- [`thumbnail_system.md`](thumbnail_system.md) - Image thumbnail generation with intelligent caching for file listings
+- [`thumbnail_system.md`](thumbnail_system.md) - Image thumbnail generation with intelligent caching for file listings and interactive gallery UI
 - [`script_improvements.md`](script_improvements.md) - Process management and PID tracking enhancements
 
 ### Development and Troubleshooting

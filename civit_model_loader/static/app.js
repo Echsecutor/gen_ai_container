@@ -14,6 +14,7 @@ import {
   removeDownloadedModel,
   startDownloadPolling,
 } from "./js/download.js";
+import "./js/gallery.js"; // Import to initialize GalleryManager
 import { showModelDetails } from "./js/models.js";
 import { changeCursor, changePage, performSearch } from "./js/search.js";
 import { appState, saveApiToken as stateSaveApiToken } from "./js/state.js";

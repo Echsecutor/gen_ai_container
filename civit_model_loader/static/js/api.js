@@ -244,6 +244,31 @@ export const downloadConvertedImages = withErrorHandler(async (directory) => {
 }, "Image conversion download failed");
 
 /**
+ * List files in a directory with thumbnails for images
+ * @param {string} folder - Directory path to list files from
+ * @returns {Promise<Object>} - Response with files array containing thumbnails
+ */
+export const listFiles = withErrorHandler(async (folder) => {
+  const url = `/api/list-files?folder=${encodeURIComponent(folder)}`;
+
+  const response = await fetch(url, {
+    method: "GET",
+    headers: {
+      Accept: "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(
+      `List files failed: ${response.status} ${response.statusText} - ${errorText}`
+    );
+  }
+
+  return await response.json();
+}, "Failed to list files");
+
+/**
  * Batch API operations utility
  */
 export class BatchApiClient {

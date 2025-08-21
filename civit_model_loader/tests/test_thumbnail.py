@@ -1,380 +1,297 @@
-#!/usr/bin/env python3
 """
-Test script for the thumbnail generation module.
-Tests the ThumbnailCache class and related functions.
+Tests for the thumbnail generation module.
+Tests the ThumbnailCache class and related functions using pytest.
 """
 
-from thumbnail import (
-    ThumbnailCache,
-    get_thumbnail_base64,
-    is_image_file,
-    get_cache_stats,
-    clear_thumbnail_cache,
-    SUPPORTED_IMAGE_FORMATS
-)
 import os
-import sys
-import tempfile
-import logging
 import time
+import tempfile
+import pytest
 from pathlib import Path
 from PIL import Image
 
-# Add parent directory to path to import thumbnail module
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from conftest import (
+    skip_if_no_thumbnail,
+    create_test_image,
+    IMAGE_FILE_TEST_CASES,
+    THUMBNAIL_AVAILABLE
+)
+
+if THUMBNAIL_AVAILABLE:
+    from thumbnail import (
+        ThumbnailCache,
+        get_thumbnail_base64,
+        is_image_file,
+        get_cache_stats,
+        clear_thumbnail_cache,
+    )
 
 
-# Set up logging
-logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
-logger = logging.getLogger(__name__)
+@skip_if_no_thumbnail()
+class TestImageFileDetection:
+    """Test image file detection functionality."""
+
+    @pytest.mark.parametrize("filename,expected", IMAGE_FILE_TEST_CASES)
+    def test_is_image_file(self, filename, expected):
+        """Test is_image_file function with various file extensions."""
+        assert is_image_file(filename) == expected
 
 
-def create_test_image(path, size=(200, 300), color=(255, 0, 0)):
-    """Create a test image with specified dimensions and color."""
-    img = Image.new('RGB', size, color)
-    img.save(path, 'PNG')
-    return path
+@skip_if_no_thumbnail()
+class TestThumbnailCache:
+    """Test thumbnail cache functionality."""
 
-
-def test_is_image_file():
-    """Test the is_image_file function."""
-    print("=== Testing is_image_file function ===")
-
-    test_cases = [
-        # (filename, expected_result)
-        ("test.jpg", True),
-        ("test.jpeg", True),
-        ("test.png", True),
-        ("test.bmp", True),
-        ("test.tiff", True),
-        ("test.tif", True),
-        ("test.webp", True),
-        ("test.gif", True),
-        ("test.JPG", True),  # Case insensitive
-        ("test.PNG", True),  # Case insensitive
-        ("test.txt", False),
-        ("test.pdf", False),
-        ("test.doc", False),
-        ("test.mp4", False),
-        ("test", False),  # No extension
-        ("", False),  # Empty string
-        ("test.jpg.txt", False),  # Wrong final extension
-    ]
-
-    passed = 0
-    failed = 0
-
-    for filename, expected in test_cases:
-        result = is_image_file(filename)
-        if result == expected:
-            print(f"✅ {filename}: {result} (expected {expected})")
-            passed += 1
-        else:
-            print(f"❌ {filename}: {result} (expected {expected})")
-            failed += 1
-
-    print(f"\nResults: {passed} passed, {failed} failed")
-    return failed == 0
-
-
-def test_thumbnail_cache_basic():
-    """Test basic thumbnail cache functionality."""
-    print("\n=== Testing ThumbnailCache Basic Functionality ===")
-
-    # Create a test cache with small limits for testing
-    cache = ThumbnailCache(
-        max_cache_size=3, max_memory_mb=5, thumbnail_size=(50, 50))
-
-    with tempfile.TemporaryDirectory() as temp_dir:
-        # Create test images
-        test_images = []
-        for i in range(5):
-            img_path = os.path.join(temp_dir, f"test_{i}.png")
-            create_test_image(img_path, (100, 100), (i * 50, 0, 0))
-            test_images.append(img_path)
-
-        print(f"Created {len(test_images)} test images")
-
-        # Test 1: Generate thumbnails
-        print("\nTest 1: Generating thumbnails")
-        thumbnails = []
-        # Only first 3 to stay within cache limit
-        for i, img_path in enumerate(test_images[:3]):
-            thumbnail = cache.get_thumbnail_base64(img_path)
-            if thumbnail:
-                print(f"✅ Generated thumbnail for test_{i}.png ({len(thumbnail)} chars)")
-                thumbnails.append(thumbnail)
-            else:
-                print(f"❌ Failed to generate thumbnail for test_{i}.png")
-                return False
-
-        # Test 2: Check cache stats
-        print("\nTest 2: Checking cache stats")
+    def test_cache_initialization(self):
+        """Test cache initialization with custom parameters."""
+        cache = ThumbnailCache(
+            max_cache_size=5,
+            max_memory_mb=10,
+            thumbnail_size=(100, 100)
+        )
         stats = cache.get_cache_stats()
-        print(f"Cache size: {stats['cache_size']}/{stats['max_cache_size']}")
-        print(f"Memory usage: {stats['memory_usage_mb']:.2f}/{stats['max_memory_mb']} MB")
-        print(f"Thumbnail size: {stats['thumbnail_size']}")
 
-        if stats['cache_size'] != 3:
-            print(f"❌ Expected 3 items in cache, got {stats['cache_size']}")
-            return False
+        assert stats['max_cache_size'] == 5
+        assert stats['max_memory_mb'] == 10
+        assert stats['thumbnail_size'] == (100, 100)
+        assert stats['cache_size'] == 0
+        assert stats['memory_usage_mb'] == 0
 
-        # Test 3: Cache hits (should be fast)
-        print("\nTest 3: Testing cache hits")
-        for i, img_path in enumerate(test_images[:3]):
-            start_time = time.time()
-            thumbnail = cache.get_thumbnail_base64(img_path)
-            end_time = time.time()
-            duration = (end_time - start_time) * 1000  # Convert to ms
+    def test_thumbnail_generation(self, thumbnail_cache, test_image_path):
+        """Test basic thumbnail generation."""
+        thumbnail = thumbnail_cache.get_thumbnail_base64(test_image_path)
 
-            if thumbnail == thumbnails[i]:
-                print(f"✅ Cache hit for test_{i}.png ({duration:.1f}ms)")
-            else:
-                print(f"❌ Cache miss or content mismatch for test_{i}.png")
-                return False
+        assert thumbnail is not None
+        assert isinstance(thumbnail, str)
+        assert len(thumbnail) > 0
 
-        # Test 4: Cache eviction (add more items than cache limit)
-        print("\nTest 4: Testing cache eviction")
-        for i in range(3, 5):  # Add 2 more images (should evict old ones)
-            thumbnail = cache.get_thumbnail_base64(test_images[i])
-            if thumbnail:
-                print(f"✅ Generated thumbnail for test_{i}.png (may cause eviction)")
-            else:
-                print(f"❌ Failed to generate thumbnail for test_{i}.png")
-                return False
+    def test_cache_stats_after_generation(self, thumbnail_cache, test_image_path):
+        """Test cache statistics after generating thumbnails."""
+        thumbnail_cache.get_thumbnail_base64(test_image_path)
+        stats = thumbnail_cache.get_cache_stats()
 
-        # Check final cache stats
-        final_stats = cache.get_cache_stats()
-        print(f"Final cache size: {final_stats['cache_size']}/{final_stats['max_cache_size']}")
+        assert stats['cache_size'] == 1
+        assert stats['memory_usage_mb'] > 0
 
-        if final_stats['cache_size'] > 3:
-            print(f"❌ Cache size exceeded limit: {final_stats['cache_size']}")
-            return False
+    def test_cache_hits(self, thumbnail_cache, test_image_path):
+        """Test that repeated requests use cache (should be faster)."""
+        # First request (cache miss)
+        start_time = time.time()
+        thumbnail1 = thumbnail_cache.get_thumbnail_base64(test_image_path)
+        first_duration = time.time() - start_time
 
-        # Test 5: Clear cache
-        print("\nTest 5: Testing cache clear")
-        cache.clear_cache()
-        clear_stats = cache.get_cache_stats()
-        if clear_stats['cache_size'] == 0 and clear_stats['memory_usage_mb'] == 0:
-            print("✅ Cache cleared successfully")
-        else:
-            print(f"❌ Cache not properly cleared: {clear_stats}")
-            return False
+        # Second request (cache hit)
+        start_time = time.time()
+        thumbnail2 = thumbnail_cache.get_thumbnail_base64(test_image_path)
+        second_duration = time.time() - start_time
 
-    print("✅ All basic cache tests passed!")
-    return True
+        assert thumbnail1 == thumbnail2
+        # Cache hit should be significantly faster (allow some variance)
+        assert second_duration < first_duration * 0.5 or second_duration < 0.001
 
+    def test_cache_eviction(self, temp_dir):
+        """Test LRU eviction when cache size limit is exceeded."""
+        cache = ThumbnailCache(
+            max_cache_size=2, max_memory_mb=10, thumbnail_size=(50, 50))
 
-def test_global_functions():
-    """Test the global convenience functions."""
-    print("\n=== Testing Global Functions ===")
+        # Create 3 test images
+        images = []
+        for i in range(3):
+            img_path = os.path.join(temp_dir, f"test_{i}.png")
+            create_test_image(img_path, (100, 100), (i * 80, 100, 200))
+            images.append(img_path)
 
-    with tempfile.TemporaryDirectory() as temp_dir:
-        # Create a test image
-        img_path = os.path.join(temp_dir, "global_test.png")
-        create_test_image(img_path, (150, 150), (0, 255, 0))
+        # Generate thumbnails for all 3 (should cause eviction)
+        for img_path in images:
+            cache.get_thumbnail_base64(img_path)
 
-        # Clear cache first
-        clear_thumbnail_cache()
+        stats = cache.get_cache_stats()
+        assert stats['cache_size'] <= 2  # Should not exceed limit
 
-        # Test 1: get_thumbnail_base64
-        print("Test 1: get_thumbnail_base64 function")
-        thumbnail = get_thumbnail_base64(img_path)
-        if thumbnail and thumbnail.startswith(""):  # Should be base64 string
-            print(f"✅ Global thumbnail function works ({len(thumbnail)} chars)")
-        else:
-            print("❌ Global thumbnail function failed")
-            return False
+    def test_cache_clear(self, thumbnail_cache, test_image_path):
+        """Test cache clearing functionality."""
+        # Generate a thumbnail
+        thumbnail_cache.get_thumbnail_base64(test_image_path)
 
-        # Test 2: get_cache_stats
-        print("Test 2: get_cache_stats function")
-        stats = get_cache_stats()
-        if stats['cache_size'] == 1:
-            print(f"✅ Global cache stats function works (size: {stats['cache_size']})")
-        else:
-            print(f"❌ Global cache stats unexpected: {stats}")
-            return False
+        # Verify cache has content
+        stats = thumbnail_cache.get_cache_stats()
+        assert stats['cache_size'] > 0
+        assert stats['memory_usage_mb'] > 0
 
-        # Test 3: clear_thumbnail_cache
-        print("Test 3: clear_thumbnail_cache function")
-        clear_thumbnail_cache()
-        stats = get_cache_stats()
-        if stats['cache_size'] == 0:
-            print("✅ Global cache clear function works")
-        else:
-            print(f"❌ Global cache clear failed: {stats}")
-            return False
+        # Clear cache
+        thumbnail_cache.clear_cache()
 
-    print("✅ All global function tests passed!")
-    return True
+        # Verify cache is empty
+        stats = thumbnail_cache.get_cache_stats()
+        assert stats['cache_size'] == 0
+        assert stats['memory_usage_mb'] == 0
+
+    def test_memory_limits(self, temp_dir):
+        """Test memory usage tracking."""
+        # Create cache with very small memory limit
+        cache = ThumbnailCache(
+            max_cache_size=10, max_memory_mb=1, thumbnail_size=(200, 200))
+
+        # Create large test image
+        img_path = os.path.join(temp_dir, "large_test.png")
+        create_test_image(img_path, (500, 500), (255, 0, 0))
+
+        # Generate thumbnail
+        thumbnail = cache.get_thumbnail_base64(img_path)
+        assert thumbnail is not None
+
+        # Check that memory usage is tracked
+        stats = cache.get_cache_stats()
+        assert stats['memory_usage_mb'] > 0
 
 
-def test_error_handling():
+@skip_if_no_thumbnail()
+class TestErrorHandling:
     """Test error handling for various edge cases."""
-    print("\n=== Testing Error Handling ===")
 
-    cache = ThumbnailCache()
+    def test_nonexistent_file(self, thumbnail_cache):
+        """Test handling of non-existent files."""
+        thumbnail = thumbnail_cache.get_thumbnail_base64(
+            "/nonexistent/file.png")
+        assert thumbnail is None
 
-    # Test 1: Non-existent file
-    print("Test 1: Non-existent file")
-    thumbnail = cache.get_thumbnail_base64("/nonexistent/file.png")
-    if thumbnail is None:
-        print("✅ Correctly handled non-existent file")
-    else:
-        print("❌ Should return None for non-existent file")
-        return False
+    def test_non_image_file(self, thumbnail_cache, temp_dir):
+        """Test handling of non-image files."""
+        txt_path = os.path.join(temp_dir, "test.txt")
+        with open(txt_path, 'w') as f:
+            f.write("This is not an image")
 
-    # Test 2: Non-image file
-    print("Test 2: Non-image file")
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
-        f.write("This is not an image")
-        txt_path = f.name
+        thumbnail = thumbnail_cache.get_thumbnail_base64(txt_path)
+        assert thumbnail is None
 
-    try:
-        thumbnail = cache.get_thumbnail_base64(txt_path)
-        if thumbnail is None:
-            print("✅ Correctly handled non-image file")
-        else:
-            print("❌ Should return None for non-image file")
-            return False
-    finally:
-        os.unlink(txt_path)
+    def test_corrupted_image_file(self, thumbnail_cache, temp_dir):
+        """Test handling of corrupted image files."""
+        corrupted_path = os.path.join(temp_dir, "corrupted.png")
+        with open(corrupted_path, 'wb') as f:
+            f.write(b"This is not a valid PNG file")
 
-    # Test 3: Corrupted image file
-    print("Test 3: Corrupted image file")
-    with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as f:
-        f.write(b"This is not a valid PNG file")
-        corrupted_path = f.name
-
-    try:
-        thumbnail = cache.get_thumbnail_base64(corrupted_path)
-        if thumbnail is None:
-            print("✅ Correctly handled corrupted image file")
-        else:
-            print("❌ Should return None for corrupted image file")
-            return False
-    finally:
-        os.unlink(corrupted_path)
-
-    print("✅ All error handling tests passed!")
-    return True
+        thumbnail = thumbnail_cache.get_thumbnail_base64(corrupted_path)
+        assert thumbnail is None
 
 
-def test_image_formats():
+@skip_if_no_thumbnail()
+class TestImageFormats:
     """Test thumbnail generation for different image formats."""
-    print("\n=== Testing Different Image Formats ===")
 
-    cache = ThumbnailCache()
+    @pytest.mark.parametrize("format_name,extension", [
+        ("PNG", "png"),
+        ("JPEG", "jpg"),
+        ("BMP", "bmp"),
+        ("TIFF", "tiff"),
+    ])
+    def test_image_format_support(self, thumbnail_cache, temp_dir, format_name, extension):
+        """Test thumbnail generation for different image formats."""
+        img_path = os.path.join(temp_dir, f"test.{extension}")
 
-    with tempfile.TemporaryDirectory() as temp_dir:
-        test_formats = [
-            ('test.png', 'PNG'),
-            ('test.jpg', 'JPEG'),
-            ('test.bmp', 'BMP'),
-            ('test.tiff', 'TIFF'),
-        ]
+        # Create image in specific format
+        img = Image.new('RGB', (100, 100), (255, 128, 0))
+        img.save(img_path, format_name)
 
-        results = []
-        for filename, format_name in test_formats:
-            print(f"Testing {format_name} format...")
-            img_path = os.path.join(temp_dir, filename)
+        # Generate thumbnail
+        thumbnail = thumbnail_cache.get_thumbnail_base64(img_path)
 
-            # Create image in specific format
-            img = Image.new('RGB', (100, 100), (255, 128, 0))
-            img.save(img_path, format_name)
+        assert thumbnail is not None
+        assert isinstance(thumbnail, str)
+        assert len(thumbnail) > 0
 
-            # Generate thumbnail
-            thumbnail = cache.get_thumbnail_base64(img_path)
+
+@skip_if_no_thumbnail()
+class TestGlobalFunctions:
+    """Test global convenience functions."""
+
+    def test_global_thumbnail_function(self, test_image_path):
+        """Test the global get_thumbnail_base64 function."""
+        clear_thumbnail_cache()
+
+        thumbnail = get_thumbnail_base64(test_image_path)
+        assert thumbnail is not None
+        assert isinstance(thumbnail, str)
+        assert len(thumbnail) > 0
+
+    def test_global_cache_stats(self, test_image_path):
+        """Test the global get_cache_stats function."""
+        clear_thumbnail_cache()
+
+        # Generate a thumbnail
+        get_thumbnail_base64(test_image_path)
+
+        stats = get_cache_stats()
+        assert stats['cache_size'] == 1
+        assert stats['memory_usage_mb'] > 0
+
+    def test_global_cache_clear(self, test_image_path):
+        """Test the global clear_thumbnail_cache function."""
+        # Generate a thumbnail
+        get_thumbnail_base64(test_image_path)
+
+        # Verify cache has content
+        stats = get_cache_stats()
+        assert stats['cache_size'] > 0
+
+        # Clear cache
+        clear_thumbnail_cache()
+
+        # Verify cache is empty
+        stats = get_cache_stats()
+        assert stats['cache_size'] == 0
+
+
+@skip_if_no_thumbnail()
+class TestExistingImages:
+    """Test with existing test images from the tests directory."""
+
+    def test_existing_test_images(self, thumbnail_cache, existing_test_images):
+        """Test with existing test images if available."""
+        if not existing_test_images:
+            pytest.skip("No existing test images found")
+
+        working_images = 0
+        for name, img_path in existing_test_images.items():
+            thumbnail = thumbnail_cache.get_thumbnail_base64(img_path)
             if thumbnail:
-                print(f"✅ {format_name} format works ({len(thumbnail)} chars)")
-                results.append(True)
-            else:
-                print(f"❌ {format_name} format failed")
-                results.append(False)
-
-        success_count = sum(results)
-        total_count = len(results)
-        print(f"\nFormat support: {success_count}/{total_count} formats working")
-
-        return success_count == total_count
-
-
-def test_with_existing_test_image():
-    """Test with the existing test image from the tests directory."""
-    print("\n=== Testing with Existing Test Image ===")
-
-    # Look for existing test images
-    test_dir = Path(__file__).parent
-    test_images = [
-        test_dir / "img.png",
-        test_dir / "img_a1111.png"
-    ]
-
-    cache = ThumbnailCache()
-    working_images = 0
-
-    for img_path in test_images:
-        if img_path.exists():
-            print(f"Testing with {img_path.name}...")
-            thumbnail = cache.get_thumbnail_base64(str(img_path))
-            if thumbnail:
-                print(f"✅ Successfully generated thumbnail for {img_path.name} ({len(thumbnail)} chars)")
                 working_images += 1
-            else:
-                print(f"❌ Failed to generate thumbnail for {img_path.name}")
-        else:
-            print(f"⚠️ Test image not found: {img_path}")
+                assert isinstance(thumbnail, str)
+                assert len(thumbnail) > 0
 
-    if working_images > 0:
-        print(f"✅ Successfully tested with {working_images} existing test images")
-        return True
-    else:
-        print("⚠️ No existing test images found, but this is not a failure")
-        return True
+        assert working_images > 0, "At least one existing test image should work"
 
 
-def run_all_tests():
-    """Run all thumbnail tests."""
-    print("🧪 Starting Thumbnail Module Tests")
-    print("=" * 50)
+@skip_if_no_thumbnail()
+class TestPerformance:
+    """Performance-related tests."""
 
-    tests = [
-        ("Image File Detection", test_is_image_file),
-        ("Basic Cache Functionality", test_thumbnail_cache_basic),
-        ("Global Functions", test_global_functions),
-        ("Error Handling", test_error_handling),
-        ("Image Formats", test_image_formats),
-        ("Existing Test Images", test_with_existing_test_image),
-    ]
+    @pytest.mark.slow
+    def test_cache_performance(self, temp_dir):
+        """Test cache performance with multiple images."""
+        cache = ThumbnailCache(
+            max_cache_size=10, max_memory_mb=20, thumbnail_size=(100, 100))
 
-    passed = 0
-    failed = 0
+        # Create multiple test images
+        images = []
+        for i in range(5):
+            img_path = os.path.join(temp_dir, f"perf_test_{i}.png")
+            create_test_image(img_path, (200, 200), (i * 50, 100, 150))
+            images.append(img_path)
 
-    for test_name, test_func in tests:
-        print(f"\n🔬 Running: {test_name}")
-        print("-" * 30)
-        try:
-            if test_func():
-                print(f"✅ {test_name}: PASSED")
-                passed += 1
-            else:
-                print(f"❌ {test_name}: FAILED")
-                failed += 1
-        except Exception as e:
-            print(f"💥 {test_name}: ERROR - {e}")
-            failed += 1
+        # Generate thumbnails (cache misses)
+        start_time = time.time()
+        for img_path in images:
+            cache.get_thumbnail_base64(img_path)
+        generation_time = time.time() - start_time
 
-    print("\n" + "=" * 50)
-    print(f"📊 Test Results: {passed} passed, {failed} failed")
+        # Access thumbnails again (cache hits)
+        start_time = time.time()
+        for img_path in images:
+            cache.get_thumbnail_base64(img_path)
+        cache_time = time.time() - start_time
 
-    if failed == 0:
-        print("🎉 All tests passed!")
-        return True
-    else:
-        print(f"⚠️ {failed} test(s) failed!")
-        return False
+        # Cache hits should be significantly faster
+        assert cache_time < generation_time * 0.3 or cache_time < 0.01
 
-
-if __name__ == "__main__":
-    success = run_all_tests()
-    sys.exit(0 if success else 1)
+        # Verify all images were cached
+        stats = cache.get_cache_stats()
+        assert stats['cache_size'] == 5

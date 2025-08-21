@@ -6,7 +6,7 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ${MODEL_DIR:-./models}:/workspace/models
+      - ${WORKSPACE:-./workspace}:/workspace
       - .:/app # Mount source code for live reloading
     environment:
       - MOUNT_DIR=/workspace

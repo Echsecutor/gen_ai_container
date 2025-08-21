@@ -1027,3 +1027,283 @@ button:disabled {
 .downloaded-model-trigger-words .trigger-words-inline {
   margin-top: 4px;
 }
+
+/* Thumbnail Gallery */
+.gallery-section {
+  margin-top: 25px;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 20px;
+}
+
+.gallery-section h3 {
+  margin-bottom: 15px;
+  color: #2d3748;
+  font-size: 1.2rem;
+}
+
+.thumbnail-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 15px;
+  min-height: 100px;
+}
+
+.thumbnail-item {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: white;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+}
+
+.thumbnail-item:hover {
+  border-color: #667eea;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+  transform: translateY(-2px);
+}
+
+.thumbnail-image {
+  width: 100%;
+  height: 150px;
+  background: #f8f9fa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.thumbnail-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.thumbnail-item:hover .thumbnail-image img {
+  transform: scale(1.05);
+}
+
+.thumbnail-placeholder {
+  color: #999;
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 20px;
+}
+
+.thumbnail-info {
+  padding: 10px;
+  border-top: 1px solid #f1f3f4;
+}
+
+.thumbnail-filename {
+  font-weight: 500;
+  color: #2d3748;
+  font-size: 0.85rem;
+  margin-bottom: 4px;
+  word-break: break-all;
+  line-height: 1.3;
+}
+
+.thumbnail-path {
+  font-size: 0.75rem;
+  color: #666;
+  opacity: 0.8;
+  word-break: break-all;
+  line-height: 1.2;
+}
+
+.gallery-status {
+  margin-top: 15px;
+  min-height: 20px;
+  text-align: center;
+}
+
+.gallery-status .loading {
+  color: #007bff;
+  font-style: italic;
+}
+
+.gallery-status .error {
+  color: #dc3545;
+  font-weight: 500;
+}
+
+.gallery-status .empty {
+  color: #666;
+  font-style: italic;
+}
+
+.gallery-status .info {
+  color: #28a745;
+  font-weight: 500;
+}
+
+/* Lightbox Modal */
+.lightbox-modal {
+  display: none;
+  position: fixed;
+  z-index: 2000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.9);
+  animation: fadeIn 0.3s ease;
+}
+
+.lightbox-content {
+  position: relative;
+  width: 90%;
+  max-width: 1200px;
+  height: 90%;
+  margin: 5% auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.lightbox-close {
+  position: absolute;
+  right: 20px;
+  top: 20px;
+  font-size: 32px;
+  font-weight: bold;
+  cursor: pointer;
+  color: white;
+  transition: color 0.2s ease;
+  z-index: 2001;
+  line-height: 1;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+}
+
+.lightbox-close:hover {
+  color: #ccc;
+  background: rgba(0, 0, 0, 0.7);
+}
+
+#lightboxImage {
+  max-width: 100%;
+  max-height: 80%;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.lightbox-info {
+  margin-top: 20px;
+  text-align: center;
+  color: white;
+  max-width: 80%;
+}
+
+.lightbox-info h4 {
+  margin-bottom: 5px;
+  font-size: 1.1rem;
+  word-break: break-all;
+}
+
+.lightbox-info p {
+  font-size: 0.9rem;
+  opacity: 0.8;
+  word-break: break-all;
+}
+
+.lightbox-nav {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 15px;
+}
+
+.lightbox-nav-btn {
+  padding: 10px 20px;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+}
+
+.lightbox-nav-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.lightbox-nav-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.lightbox-nav-btn:disabled:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Additional responsive styles for thumbnail gallery */
+@media (max-width: 768px) {
+  .thumbnail-gallery {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 10px;
+  }
+
+  .thumbnail-image {
+    height: 120px;
+  }
+
+  .conversion-row {
+    flex-direction: column;
+  }
+
+  .conversion-row button {
+    width: 100%;
+    margin-top: 10px;
+  }
+
+  .lightbox-content {
+    width: 95%;
+    height: 95%;
+    margin: 2.5% auto;
+  }
+
+  .lightbox-close {
+    right: 10px;
+    top: 10px;
+    font-size: 24px;
+    width: 32px;
+    height: 32px;
+  }
+
+  .lightbox-nav {
+    bottom: 10px;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .lightbox-nav-btn {
+    padding: 8px 16px;
+    font-size: 12px;
+  }
+}

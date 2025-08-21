@@ -121,7 +121,7 @@
 
             <!-- Image Conversion Section -->
             <section class="conversion-section">
-                <h2>Convert Output Images</h2>
+                <h2>Output Images</h2>
                 <p class="conversion-help">
                     Convert InvokeAI generated images to Automatic1111 format and download as ZIP
                 </p>
@@ -130,10 +130,22 @@
                         <input type="text" id="imageDirectory" placeholder="Directory path..."
                             value="/workspace/output/images">
                         <button id="downloadImagesBtn">Download Converted Images</button>
+                        <button id="refreshGalleryBtn">Refresh Gallery</button>
                     </div>
                 </div>
                 <div id="conversionStatus" class="conversion-status">
                     <!-- Conversion status will be shown here -->
+                </div>
+
+                <!-- Thumbnail Gallery -->
+                <div class="gallery-section">
+                    <h3>Image Gallery</h3>
+                    <div id="thumbnailGallery" class="thumbnail-gallery">
+                        <!-- Thumbnails will be populated here -->
+                    </div>
+                    <div id="galleryStatus" class="gallery-status">
+                        <!-- Gallery status will be shown here -->
+                    </div>
                 </div>
             </section>
         </div>
@@ -145,6 +157,22 @@
             <span class="close">&times;</span>
             <div id="modelDetails">
                 <!-- Model details will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Lightbox Modal -->
+    <div id="lightboxModal" class="lightbox-modal">
+        <div class="lightbox-content">
+            <span class="lightbox-close">&times;</span>
+            <img id="lightboxImage" src="" alt="">
+            <div class="lightbox-info">
+                <h4 id="lightboxFilename"></h4>
+                <p id="lightboxPath"></p>
+            </div>
+            <div class="lightbox-nav">
+                <button id="lightboxPrev" class="lightbox-nav-btn">&larr; Previous</button>
+                <button id="lightboxNext" class="lightbox-nav-btn">Next &rarr;</button>
             </div>
         </div>
     </div>
