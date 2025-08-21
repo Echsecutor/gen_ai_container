@@ -120,3 +120,13 @@ class FileExistenceStatus(BaseModel):
 
 class FileExistenceResponse(BaseModel):
     files: List[FileExistenceStatus]
+
+
+class FileInfo(BaseModel):
+    filename: str
+    full_path: str
+    thumbnail: Optional[str] = None  # Base64-encoded thumbnail for images
+
+
+class ListFilesResponse(BaseModel):
+    files: List[FileInfo]

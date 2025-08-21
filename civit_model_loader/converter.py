@@ -44,11 +44,11 @@ sampler_info = {
 def save_model_hash(basename: str, model_hash: str, hash_cache: Any, cache_dir: str = None) -> None:
     # Save calculated model hash to cache so that it can be quickly recalled later
     hash_cache[basename] = model_hash
-    
+
     # Use /workspace as default if available, otherwise current directory
     if cache_dir is None:
         cache_dir = "/workspace" if os.path.exists("/workspace") else "."
-    
+
     cache_file = os.path.join(cache_dir, "hash_cache.json")
     with open(cache_file, "w") as f:
         f.write(json.dumps(hash_cache, indent=4))
@@ -77,7 +77,8 @@ def calculate_shorthash(filename: str, hash_cache: Any, cache_dir: str = None) -
                     f"{os.path.basename(filename)}. This will take a few seconds...")
         longhash = calculate_sha256(filename)
         shorthash = longhash[0:10]
-        save_model_hash(os.path.basename(filename), shorthash, hash_cache, cache_dir)
+        save_model_hash(os.path.basename(filename),
+                        shorthash, hash_cache, cache_dir)
     return shorthash
 
 
@@ -111,7 +112,7 @@ def main() -> None:
 
     # Use /workspace as config directory if available, otherwise current directory
     config_dir = "/workspace" if os.path.exists("/workspace") else "."
-    
+
     config_file = os.path.join(config_dir, "invokeai_cfg.json")
     if os.path.exists(config_file):
         with open(config_file, "r") as f:
@@ -238,7 +239,8 @@ def convert_image_metadata(input_file: str, output_file: str, invokeai_cfg: dict
             if 'model_folder' in invokeai_cfg:
                 model_file = f"{invokeai_cfg['model_folder']}/" \
                     f"{json_data['model']['name']}.safetensors"
-                model_hash = calculate_shorthash(model_file, hash_cache, cache_dir)
+                model_hash = calculate_shorthash(
+                    model_file, hash_cache, cache_dir)
                 if model_hash != "NOFILE":
                     meta_mhash = 'Model hash: ' + model_hash
                 else:
@@ -267,7 +269,8 @@ def convert_image_metadata(input_file: str, output_file: str, invokeai_cfg: dict
                 if 'vae_folder' in invokeai_cfg:
                     model_file = f"{invokeai_cfg['vae_folder']}/" \
                         f"{json_data['vae']['name']}.safetensors"
-                    model_hash = calculate_shorthash(model_file, hash_cache, cache_dir)
+                    model_hash = calculate_shorthash(
+                        model_file, hash_cache, cache_dir)
                     if model_hash != "NOFILE":
                         meta_vhash = 'VAE hash: ' + model_hash
                     else:
@@ -299,7 +302,8 @@ def convert_image_metadata(input_file: str, output_file: str, invokeai_cfg: dict
                     if 'lora_folder' in invokeai_cfg:
                         model_file = f"{invokeai_cfg['lora_folder']}/" \
                             f"{lora['model']['name']}.safetensors"
-                        lora_hash = calculate_shorthash(model_file, hash_cache, cache_dir)
+                        lora_hash = calculate_shorthash(
+                            model_file, hash_cache, cache_dir)
                         if lora_hash == "NOFILE":
                             error_msg = f"ERROR: Model file " \
                                 f"{model_file} not found!"
@@ -368,7 +372,7 @@ def convert_invokeai_to_a1111(input_file: str, output_file: str, cache_dir: str 
     # Use /workspace as config directory if available, otherwise current directory
     if cache_dir is None:
         cache_dir = "/workspace" if os.path.exists("/workspace") else "."
-    
+
     # Load configuration if available
     invokeai_cfg = {}
     config_file = os.path.join(cache_dir, "invokeai_cfg.json")

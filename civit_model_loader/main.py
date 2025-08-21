@@ -13,10 +13,11 @@ from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
-from models import SearchRequest, DownloadRequest, DownloadInfo, ConfigExport, FileExistenceRequest, FileExistenceResponse, FileExistenceStatus
+from models import SearchRequest, DownloadRequest, DownloadInfo, ConfigExport, FileExistenceRequest, FileExistenceResponse, FileExistenceStatus, FileInfo, ListFilesResponse
 from civitai_client import CivitaiClient
 from download_manager import DownloadManager
 from converter import convert_invokeai_to_a1111
+from thumbnail import get_thumbnail_base64, is_image_file
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -364,6 +365,81 @@ async def download_converted_images(directory: str = Query(default="/workspace/o
         raise
     except Exception as e:
         logger.error(f"Unexpected error in download_converted_images: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Internal server error: {str(e)}")
+
+
+@app.get("/api/list-files")
+async def list_files(folder: str = Query(default="/workspace/output/images")):
+    """
+    List all files in a specified server-side folder with thumbnails for images.
+
+    Args:
+        folder: Server-side folder path to list files from (default: /workspace/output/images)
+
+    Returns:
+        JSON array containing file information with thumbnails for images
+    """
+    try:
+        # Validate folder exists
+        if not os.path.exists(folder):
+            raise HTTPException(
+                status_code=404, detail=f"Folder not found: {folder}")
+
+        if not os.path.isdir(folder):
+            raise HTTPException(
+                status_code=400, detail=f"Path is not a directory: {folder}")
+
+        logger.info(f"Listing files in folder: {folder}")
+
+        file_list = []
+
+        try:
+            # Get all files in the directory
+            for filename in os.listdir(folder):
+                file_path = os.path.join(folder, filename)
+
+                # Skip directories, only include files
+                if os.path.isfile(file_path):
+                    # Create base file info
+                    file_info = FileInfo(
+                        filename=filename,
+                        full_path=file_path,
+                        thumbnail=None
+                    )
+
+                    # Generate thumbnail if it's an image file
+                    if is_image_file(file_path):
+                        try:
+                            thumbnail_base64 = get_thumbnail_base64(file_path)
+                            if thumbnail_base64:
+                                file_info.thumbnail = f"data:image/jpeg;base64,{thumbnail_base64}"
+                        except Exception as e:
+                            logger.warning(f"Failed to generate thumbnail for {file_path}: {e}")
+                            # Continue without thumbnail
+
+                    file_list.append(file_info)
+
+            # Sort files by name for consistent ordering
+            file_list.sort(key=lambda x: x.filename.lower())
+
+            logger.info(f"Found {len(file_list)} files in {folder}")
+
+            return ListFilesResponse(files=file_list)
+
+        except PermissionError:
+            raise HTTPException(
+                status_code=403, detail=f"Permission denied accessing folder: {folder}")
+        except Exception as e:
+            logger.error(f"Error listing files in {folder}: {e}")
+            raise HTTPException(
+                status_code=500, detail=f"Error listing files: {str(e)}")
+
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error in list_files: {e}")
         raise HTTPException(
             status_code=500, detail=f"Internal server error: {str(e)}")
 

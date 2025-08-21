@@ -2,6 +2,35 @@
 
 ## WIP
 
+- Added new `/api/list-files` endpoint for server-side file browsing with image thumbnails
+
+  - New endpoint accepts `folder` query parameter (default: `/workspace/output/images`) to list files in any server-side directory
+  - Returns JSON array with file information including filename, full path, and base64-encoded thumbnails for image files
+  - Created `thumbnail.py` module with intelligent in-memory caching system for thumbnail generation
+  - Thumbnail cache features LRU eviction, memory usage limits (50MB default), and configurable cache size (100 items default)
+  - Supports all common image formats: JPG, PNG, BMP, TIFF, WebP, GIF with automatic format detection
+  - Thumbnails are 150x150 pixels with aspect ratio preservation and optimized JPEG encoding
+  - Cache invalidation based on file modification time ensures thumbnails stay current
+  - Added new `FileInfo` and `ListFilesResponse` Pydantic models for structured API responses
+  - Comprehensive error handling for missing directories, permission issues, and thumbnail generation failures
+  - Files sorted alphabetically for consistent ordering across requests
+  - Added comprehensive test suite with 100+ individual test cases covering all functionality
+  - Created `test_thumbnail.py` for testing thumbnail generation, caching, and error handling
+  - Created `test_list_files_endpoint.py` for testing endpoint functionality and data models
+  - Created `test_all.py` comprehensive test runner for complete validation
+  - All tests include edge case handling, performance validation, and integration testing
+
+- Fixed autopep8 f-string breaking issues that caused container startup failures
+
+  - Enhanced autopep8 configuration to prevent breaking f-string literals across lines
+  - Added E704, E127, E128 to ignore list to prevent string literal formatting issues
+  - Fixed broken f-strings in `/api/list-files` endpoint that caused SyntaxError
+  - Added `hang_closing = false` setting to prevent improper line breaking
+  - Updated both `.autopep8` and `pyproject.toml` configurations for consistency
+  - All Python files now pass syntax validation without formatter-induced errors
+  - Created `scripts/fix_broken_fstrings.py` automated recovery tool for future incidents
+  - Added comprehensive troubleshooting documentation and prevention strategies
+
 - Fixed converter permission errors in cloud environments
 
   - Modified `converter.py` to use `/workspace` directory for config and cache files instead of current working directory

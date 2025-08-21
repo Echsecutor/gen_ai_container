@@ -14,6 +14,8 @@ Complete frontend + backend implementation for downloading AI models from Civita
   - `models.py` - Pydantic data models for API requests/responses
   - `civitai_client.py` - Civitai API integration client
   - `download_manager.py` - Asynchronous download handling with progress tracking
+  - `thumbnail.py` - Image thumbnail generation with intelligent in-memory caching
+  - `converter.py` - InvokeAI to Automatic1111 metadata conversion utilities
 
 ### Frontend (HTML/CSS/JavaScript)
 
@@ -105,6 +107,12 @@ Complete frontend + backend implementation for downloading AI models from Civita
 ### File Management
 
 - `POST /api/check-files` - Check if downloaded model files exist on disk
+- `GET /api/list-files?folder=/path/to/folder` - List files in server-side directory with image thumbnails
+  - Default folder: `/workspace/output/images`
+  - Returns JSON array with file information: filename, full path, and thumbnails for images
+  - Thumbnails are base64-encoded JPEG data URLs (150x150px with aspect ratio preservation)
+  - Supports all common image formats: JPG, PNG, BMP, TIFF, WebP, GIF
+  - Uses intelligent in-memory caching with LRU eviction and configurable memory limits
 
 ### Image Conversion
 

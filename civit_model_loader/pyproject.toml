@@ -1,8 +1,10 @@
 [tool.autopep8]
 max_line_length = 120
-ignore = ["E501", "W503"]
-aggressive = 1
+ignore = ["E501", "W503", "E704", "E127", "E128", "E124", "E125", "E126", "E129"]
+aggressive = 0
 experimental = false
+hang_closing = false
+# CRITICAL: Prevent string literal breaking - AGGRESSIVE = 0 to prevent breaking
 
 [tool.black]
 line-length = 120
