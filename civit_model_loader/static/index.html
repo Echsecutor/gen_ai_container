@@ -59,15 +59,34 @@
                 </p>
             </section>
 
-            <!-- Search Section -->
+            <!-- Unified Search Section -->
             <section class="search-section">
                 <h2>Search Models</h2>
                 <div class="search-form">
+                    <!-- Search Mode Toggle -->
+                    <div class="search-mode-row">
+                        <div class="search-mode-toggle">
+                            <label>
+                                <input type="radio" name="searchMode" value="query" id="searchModeQuery" checked>
+                                Search by Name/Keywords
+                            </label>
+                            <label>
+                                <input type="radio" name="searchMode" value="id" id="searchModeId">
+                                Search by Model ID
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Search Input Row -->
                     <div class="search-row">
-                        <input type="text" id="searchQuery" placeholder="Search for models...">
+                        <input type="text" id="searchQuery" placeholder="Search for models..." style="display: block;">
+                        <input type="number" id="modelIdInput" placeholder="Enter model ID (e.g., 12345)" min="1"
+                            style="display: none;">
                         <button id="searchBtn">Search</button>
                     </div>
-                    <div class="filter-row">
+
+                    <!-- Filter Row (only for query search) -->
+                    <div class="filter-row" id="filterRow">
                         <select id="modelType">
                             <option value="">All Types</option>
                             <option value="Checkpoint">Checkpoint</option>

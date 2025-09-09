@@ -2,7 +2,7 @@
  * Search functionality and pagination management for the Civitai Model Loader
  */
 
-import { searchModels } from "./api.js";
+import { getModelDetails, searchModels } from "./api.js";
 import {
   appState,
   getCurrentSearch,
@@ -18,6 +18,7 @@ import { escapeHtml, truncateDescription } from "./utils.js";
  */
 class SearchManager {
   constructor() {
+    this.currentSearchMode = "query"; // Default search mode
     this.setupEventListeners();
   }
 
@@ -27,7 +28,10 @@ class SearchManager {
   setupEventListeners() {
     const searchBtn = document.getElementById("searchBtn");
     const searchQuery = document.getElementById("searchQuery");
+    const modelIdInput = document.getElementById("modelIdInput");
     const nsfwFilter = document.getElementById("nsfwFilter");
+    const searchModeQuery = document.getElementById("searchModeQuery");
+    const searchModeId = document.getElementById("searchModeId");
 
     if (searchBtn) {
       searchBtn.addEventListener("click", () => this.performSearch());
@@ -41,17 +45,79 @@ class SearchManager {
       });
     }
 
+    if (modelIdInput) {
+      modelIdInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") {
+          this.performSearch();
+        }
+      });
+    }
+
     if (nsfwFilter) {
       nsfwFilter.addEventListener("change", (e) => {
         appState.saveNsfwPreference(e.target.checked);
       });
     }
+
+    // Search mode toggle listeners
+    if (searchModeQuery) {
+      searchModeQuery.addEventListener("change", () => {
+        if (searchModeQuery.checked) {
+          this.switchSearchMode("query");
+        }
+      });
+    }
+
+    if (searchModeId) {
+      searchModeId.addEventListener("change", () => {
+        if (searchModeId.checked) {
+          this.switchSearchMode("id");
+        }
+      });
+    }
+  }
+
+  /**
+   * Switches between search modes (query vs ID)
+   * @param {string} mode - "query" or "id"
+   */
+  switchSearchMode(mode) {
+    this.currentSearchMode = mode;
+    const searchQuery = document.getElementById("searchQuery");
+    const modelIdInput = document.getElementById("modelIdInput");
+    const filterRow = document.getElementById("filterRow");
+
+    if (mode === "query") {
+      // Show query input, hide ID input, show filters
+      if (searchQuery) searchQuery.style.display = "block";
+      if (modelIdInput) modelIdInput.style.display = "none";
+      if (filterRow) filterRow.classList.remove("hidden");
+    } else {
+      // Show ID input, hide query input, hide filters
+      if (searchQuery) searchQuery.style.display = "none";
+      if (modelIdInput) modelIdInput.style.display = "block";
+      if (filterRow) filterRow.classList.add("hidden");
+    }
+
+    // Clear results when switching modes
+    this.clearResults();
   }
 
   /**
    * Performs a new search with form parameters
    */
   async performSearch() {
+    if (this.currentSearchMode === "id") {
+      await this.performModelIdSearch();
+    } else {
+      await this.performQuerySearch();
+    }
+  }
+
+  /**
+   * Performs a query-based search
+   */
+  async performQuerySearch() {
     // Reset to first page for new searches
     setCurrentPage(1);
 
@@ -67,6 +133,7 @@ class SearchManager {
       limit: 20,
       page: 1, // Always start from page 1 for new searches
       cursor: null, // Always start from beginning for new searches
+      searchMode: "query", // Add search mode for tracking
     };
 
     // Only add types if a model type is selected
@@ -81,6 +148,56 @@ class SearchManager {
     const cleanedRequest = this.cleanSearchRequest(searchRequest);
     setCurrentSearch(cleanedRequest);
     await this.performSearchWithRequest(cleanedRequest);
+  }
+
+  /**
+   * Performs a model ID search
+   */
+  async performModelIdSearch() {
+    const modelIdInput = document.getElementById("modelIdInput");
+    const resultsContainer = document.getElementById("searchResults");
+
+    if (!modelIdInput || !resultsContainer) {
+      console.error("Required elements not found");
+      return;
+    }
+
+    const modelId = parseInt(modelIdInput.value.trim());
+
+    // Validate input
+    if (!modelId || modelId <= 0) {
+      showToast("Please enter a valid model ID", "error");
+      return;
+    }
+
+    try {
+      // Clear pagination since model ID search doesn't use it
+      this.clearPagination();
+
+      // Show loading state
+      this.showLoading(resultsContainer);
+
+      // Fetch model details
+      const modelData = await getModelDetails(modelId);
+
+      if (!modelData) {
+        throw new Error("Model not found");
+      }
+
+      // Display the model as a single result
+      this.displayModelIdResult(modelData, resultsContainer);
+      showToast("Model loaded successfully", "success");
+
+      // Store the search for state management
+      setCurrentSearch({
+        searchMode: "id",
+        modelId: modelId,
+      });
+    } catch (error) {
+      console.error("Model ID search error:", error);
+      this.showError(resultsContainer, error.message);
+      showToast(`Failed to load model: ${error.message}`, "error");
+    }
   }
 
   /**
@@ -301,7 +418,10 @@ class SearchManager {
    */
   async changeCursor(direction) {
     const currentSearch = getCurrentSearch();
-    if (!currentSearch) return;
+    if (!currentSearch || currentSearch.searchMode === "id") {
+      // No pagination for model ID search
+      return;
+    }
 
     // For cursor-based pagination, we need to get the nextCursor from the last response
     if (direction === "next") {
@@ -329,6 +449,12 @@ class SearchManager {
    * @param {number} page - Page number to navigate to
    */
   async changePage(page) {
+    const currentSearch = getCurrentSearch();
+    if (!currentSearch || currentSearch.searchMode === "id") {
+      // No pagination for model ID search
+      return;
+    }
+
     // Ensure page is a valid number
     const pageNum = parseInt(page);
     if (isNaN(pageNum) || pageNum < 1) {
@@ -337,7 +463,6 @@ class SearchManager {
     }
 
     setCurrentPage(pageNum);
-    const currentSearch = getCurrentSearch();
 
     if (currentSearch) {
       // Update the page in the stored search request and perform search
@@ -350,6 +475,155 @@ class SearchManager {
   }
 
   /**
+   * Shows loading state in the results container
+   * @param {Element} container - Results container element
+   */
+  showLoading(container) {
+    container.innerHTML = `
+      <div class="loading">
+        🔍 Loading model details...
+      </div>
+    `;
+  }
+
+  /**
+   * Shows error state in the results container
+   * @param {Element} container - Results container element
+   * @param {string} errorMessage - Error message to display
+   */
+  showError(container, errorMessage) {
+    container.innerHTML = `
+      <div class="error">
+        ❌ Error: ${escapeHtml(errorMessage)}
+      </div>
+    `;
+  }
+
+  /**
+   * Displays a single model result from model ID search
+   * @param {Object} model - Model data from API
+   * @param {Element} container - Results container element
+   */
+  displayModelIdResult(model, container) {
+    try {
+      const modelCard = this.createDetailedModelCard(model);
+      container.innerHTML = modelCard;
+    } catch (error) {
+      console.error("Error displaying model result:", error);
+      this.showError(container, "Failed to display model details");
+    }
+  }
+
+  /**
+   * Creates a detailed model card HTML for model ID search results
+   * @param {Object} model - Model data
+   * @returns {string} - HTML string for model card
+   */
+  createDetailedModelCard(model) {
+    // Get the first image from the first model version as preview
+    let previewImageUrl = null;
+    if (model.modelVersions && model.modelVersions.length > 0) {
+      const firstVersion = model.modelVersions[0];
+      if (firstVersion.images && firstVersion.images.length > 0) {
+        previewImageUrl = firstVersion.images[0].url;
+      }
+    }
+
+    const imageHtml = previewImageUrl
+      ? `
+        <div class="model-image-preview">
+            <img src="${escapeHtml(previewImageUrl)}" 
+                 alt="${escapeHtml(model.name)}" 
+                 onerror="this.parentElement.style.display='none'">
+        </div>
+        `
+      : "";
+
+    const truncatedDescription = truncateDescription(model.description);
+
+    // Version information
+    const versionsInfo =
+      model.modelVersions && model.modelVersions.length > 0
+        ? `
+        <div class="model-versions-info">
+          <h4>Available Versions (${model.modelVersions.length})</h4>
+          <div class="versions-list">
+            ${model.modelVersions
+              .slice(0, 3)
+              .map(
+                (version) => `
+              <div class="version-item">
+                <strong>${escapeHtml(version.name)}</strong>
+                ${
+                  version.files && version.files.length > 0
+                    ? `<span class="file-count">(${version.files.length} files)</span>`
+                    : ""
+                }
+              </div>
+            `
+              )
+              .join("")}
+            ${
+              model.modelVersions.length > 3
+                ? `<div class="more-versions">... and ${
+                    model.modelVersions.length - 3
+                  } more versions</div>`
+                : ""
+            }
+          </div>
+        </div>
+        `
+        : "";
+
+    return `
+      <div class="model-card detailed-model-card">
+          ${imageHtml}
+          <div class="model-content">
+              <div class="model-header">
+                  <h3>${escapeHtml(model.name)}</h3>
+                  <span class="model-id-badge">ID: ${model.id}</span>
+              </div>
+              <p class="model-description">${truncatedDescription}</p>
+              <div class="model-meta">
+                  <span class="model-type">${escapeHtml(model.type)}</span>
+                  <span>by ${escapeHtml(
+                    model.creator?.username || "Unknown"
+                  )}</span>
+                  ${
+                    model.stats
+                      ? `
+                    <span class="model-stats">
+                      👍 ${model.stats.thumbsUpCount || 0} | 
+                      ⬇️ ${model.stats.downloadCount || 0}
+                    </span>
+                  `
+                      : ""
+                  }
+              </div>
+              ${versionsInfo}
+              <div class="model-actions">
+                  <button onclick="window.showModelDetails(${
+                    model.id
+                  })" class="btn-primary">
+                      View Full Details & Download
+                  </button>
+              </div>
+          </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Clears pagination
+   */
+  clearPagination() {
+    const pagination = document.getElementById("pagination");
+    if (pagination) {
+      pagination.innerHTML = "";
+    }
+  }
+
+  /**
    * Clears search results
    */
   clearResults() {
@@ -358,11 +632,7 @@ class SearchManager {
       container.innerHTML = "";
     }
 
-    const pagination = document.getElementById("pagination");
-    if (pagination) {
-      pagination.innerHTML = "";
-    }
-
+    this.clearPagination();
     setCurrentSearch(null);
     setCurrentPage(1);
     appState.setLastSearchMetadata(null);

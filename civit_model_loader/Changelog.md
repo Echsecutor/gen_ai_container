@@ -2,6 +2,19 @@
 
 ## WIP
 
+- Unified search interface with both text and model ID search capabilities
+
+  - Merged separate search sections into single interface with radio button mode toggle
+  - Integrated model ID search functionality directly into main search.js module
+  - Eliminated code duplication between query search and model ID search
+  - Shared results display container for both search types
+  - Added search mode toggle with dynamic UI switching (show/hide filters for different modes)
+  - Enhanced search.js with unified SearchManager handling both search modes
+  - Removed separate model-id-search.js module to reduce codebase complexity
+  - Added detailed model cards for model ID results with version info and statistics
+  - Improved CSS with unified styling and smooth transitions between search modes
+  - Enhanced error handling and user feedback across both search types
+
 - Refactored test suite to use pytest framework with improved organization and maintainability
 
   - Migrated all tests from custom test runners to pytest conventions with proper test discovery

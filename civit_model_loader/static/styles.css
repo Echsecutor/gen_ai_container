@@ -140,9 +140,40 @@ section h2 {
   color: #334155;
 }
 
-/* Search Section */
+/* Unified Search Section */
 .search-form {
   margin-bottom: 20px;
+}
+
+.search-mode-row {
+  margin-bottom: 15px;
+}
+
+.search-mode-toggle {
+  display: flex;
+  gap: 20px;
+  padding: 10px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+}
+
+.search-mode-toggle label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.search-mode-toggle label:hover {
+  color: #667eea;
+}
+
+.search-mode-toggle input[type="radio"] {
+  margin: 0;
 }
 
 .search-row {
@@ -153,6 +184,16 @@ section h2 {
 
 .search-row input {
   flex: 1;
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.search-row input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
 .filter-row {
@@ -160,6 +201,14 @@ section h2 {
   gap: 10px;
   align-items: center;
   flex-wrap: wrap;
+  transition: opacity 0.3s ease, height 0.3s ease;
+}
+
+.filter-row.hidden {
+  opacity: 0;
+  height: 0;
+  overflow: hidden;
+  margin: 0;
 }
 
 .filter-row select {
@@ -174,6 +223,134 @@ section h2 {
   align-items: center;
   gap: 5px;
   font-size: 14px;
+}
+
+/* Additional styling for unified search results */
+.search-results .loading {
+  text-align: center;
+  padding: 20px;
+  color: #6c757d;
+}
+
+.search-results .error {
+  background: #f8d7da;
+  color: #721c24;
+  padding: 15px;
+  border-radius: 6px;
+  border: 1px solid #f5c6cb;
+}
+
+.search-results .success {
+  background: #d4edda;
+  color: #155724;
+  padding: 15px;
+  border-radius: 6px;
+  border: 1px solid #c3e6cb;
+}
+
+/* Detailed Model Card for Model ID Search */
+.detailed-model-card {
+  max-width: none;
+  background: white;
+}
+
+.detailed-model-card .model-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 10px;
+}
+
+.detailed-model-card .model-header h3 {
+  margin: 0;
+  flex: 1;
+}
+
+.model-id-badge {
+  background: #667eea;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.detailed-model-card .model-description {
+  margin-bottom: 15px;
+  line-height: 1.5;
+}
+
+.detailed-model-card .model-stats {
+  font-size: 14px;
+  color: #666;
+}
+
+.model-versions-info {
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 6px;
+  margin: 15px 0;
+}
+
+.model-versions-info h4 {
+  margin: 0 0 10px 0;
+  color: #495057;
+  font-size: 16px;
+}
+
+.versions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.version-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  background: white;
+  border-radius: 4px;
+  border: 1px solid #e9ecef;
+}
+
+.version-item strong {
+  flex: 1;
+}
+
+.file-count {
+  font-size: 12px;
+  color: #6c757d;
+  background: #e9ecef;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.more-versions {
+  font-style: italic;
+  color: #6c757d;
+  text-align: center;
+  padding: 8px;
+}
+
+.model-actions {
+  margin-top: 15px;
+  text-align: center;
+}
+
+.model-actions .btn-primary {
+  background: #667eea;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.model-actions .btn-primary:hover {
+  background: #5a67d8;
 }
 
 /* Search Results */

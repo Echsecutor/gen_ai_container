@@ -29,7 +29,7 @@ Complete frontend + backend implementation for downloading AI models from Civita
   - `ui.js` - UI components (modals, toasts, progress bars, loading states)
   - `state.js` - Global state management and localStorage persistence
   - `api.js` - Backend API client with error handling and retry logic
-  - `search.js` - Search functionality and pagination management
+  - `search.js` - Unified search functionality (query + model ID) with pagination management
   - `models.js` - Model details display and interaction
   - `download.js` - Download operations and queue management
   - `config.js` - Configuration import/export functionality
@@ -47,9 +47,16 @@ Complete frontend + backend implementation for downloading AI models from Civita
 
 ### Model Discovery
 
-- Search Civitai models with filters (type, sort, NSFW)
-- Pagination support for search results
+- **Unified Search Interface** with two modes:
+  - **Search by Name/Keywords**: Traditional text-based search with filters (type, sort, NSFW)
+  - **Search by Model ID**: Direct model lookup using Civitai model ID
+- Radio button toggle to switch between search modes
+- Dynamic UI that shows/hides filters based on search mode
+- Shared results display for both search types
+- Pagination support for query search results (not applicable to single model ID results)
 - Model detail modal with version/file information
+- Enhanced error handling and user feedback for both search modes
+- Detailed model cards for ID search results with version information and statistics
 
 ### Download Management
 

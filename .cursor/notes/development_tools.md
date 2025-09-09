@@ -34,9 +34,16 @@ Located in `.autopep8` and `pyproject.toml`:
 max_line_length = 120
 ignore = E501,W503,E704,E127,E128,E124,E125,E126,E129
 aggressive = 0  # CRITICAL: Prevents string breaking
-experimental = false
-hang_closing = false
+experimental = false  # Avoids experimental features that might break strings
+hang_closing = false  # Prevents improper line breaking
 ```
+
+**Key safety settings:**
+
+- `aggressive = 0` - Prevents string breaking (most critical)
+- `hang_closing = false` - Prevents improper line breaking  
+- `experimental = false` - Avoids experimental features that break strings
+- Ignores formatting rules that attempt to break strings across lines
 
 #### 2. Automated Fixing Script
 
@@ -94,7 +101,21 @@ url = "data:image/jpeg;base64," + thumbnail_base64
 url = f"very_long_prefix_that_might_cause_line_breaks_{very_long_variable_name}_with_suffix"
 ```
 
-#### 3. Alternative Formatters
+#### 3. VS Code Integration
+
+If using VS Code with autopep8, ensure your `settings.json` includes:
+
+```json
+{
+  "python.formatting.autopep8Args": [
+    "--ignore=E501,W503,E704,E127,E128",
+    "--hang-closing=false",
+    "--experimental=false"
+  ]
+}
+```
+
+#### 4. Alternative Formatters
 
 Consider using **Black formatter** instead of autopep8:
 
@@ -114,7 +135,11 @@ find . -name "*.py" -exec python -m py_compile {} \;
 **Find broken f-strings:**
 
 ```bash
-grep -n "f\".*{$" *.py **/*.py
+# Find specific broken pattern
+grep -n "f\".*{$" *.py
+
+# Search all Python files recursively
+find . -name "*.py" -exec grep -l "f\".*{$" {} \;
 ```
 
 **Test specific file:**
