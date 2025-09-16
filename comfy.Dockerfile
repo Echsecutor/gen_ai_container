@@ -27,6 +27,8 @@ RUN apt-get update -y && \
     && apt-get clean -y
 
 
+Add civit_model_loader /civit_model_loader
+
 RUN git clone https://github.com/comfyanonymous/ComfyUI.git /opt/comfyui \
     && cd /opt/comfyui \
     &&git checkout tags/${COMFY_UI_VERSION}
@@ -47,7 +49,7 @@ RUN for dir in models output custom_nodes user; do \
 
 EXPOSE 8188
 
-ADD comfy_entrypoint.sh /entrypoint.sh
+ADD comfy/comfy_entrypoint.sh /entrypoint.sh
 ENTRYPOINT ["/bin/bash", "/entrypoint.sh"]
 
 VOLUME ["${MOUNT_DIR}"]
