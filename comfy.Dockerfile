@@ -8,7 +8,7 @@ FROM pytorch/pytorch:2.6.0-cuda12.6-cudnn9-runtime
 ENV DEBIAN_FRONTEND=noninteractive
 
 
-ARG COMFY_UI_VERSION=v0.3.34
+ARG COMFY_UI_VERSION=v0.3.59
 ARG COMFY_UI_MANAGER_VERSION=3.32.2
 ARG MOUNT_DIR=/workspace
 ENV MOUNT_DIR=${MOUNT_DIR}
@@ -27,17 +27,13 @@ RUN apt-get update -y && \
     && apt-get clean -y
 
 
-RUN git clone https://github.com/comfyanonymous/ComfyUI.git /opt/comfyui && \
-    cd /opt/comfyui && \
-    git checkout tags/${COMFY_UI_VERSION}
+RUN git clone https://github.com/comfyanonymous/ComfyUI.git /opt/comfyui \
+    && cd /opt/comfyui \
+    &&git checkout tags/${COMFY_UI_VERSION}
 
-RUN git clone https://github.com/ltdrdata/ComfyUI-Manager.git /opt/comfyui-manager && \
-    cd /opt/comfyui-manager && \
-    git checkout tags/${COMFY_UI_MANAGER_VERSION}
 
 RUN pip install \
-    --requirement /opt/comfyui/requirements.txt \
-    --requirement /opt/comfyui-manager/requirements.txt
+    --requirement /opt/comfyui/requirements.txt
 
 WORKDIR /opt/comfyui
 

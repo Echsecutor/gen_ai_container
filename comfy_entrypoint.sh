@@ -33,34 +33,35 @@ for MODEL_DIRECTORY in ${MODEL_DIRECTORIES[@]}; do
     mkdir -p /opt/comfyui/models/$MODEL_DIRECTORY
 done
 
-# Creates the symlink for the ComfyUI Manager to the custom nodes directory, which is also mounted from the host
-echo "Creating symlink for ComfyUI Manager..."
-rm --force /opt/comfyui/custom_nodes/ComfyUI-Manager
-ln -s \
-    /opt/comfyui-manager \
-    /opt/comfyui/custom_nodes/ComfyUI-Manager
-
 echo "Updating compfy UI requirements..."
 pip install -r /opt/comfyui/requirements.txt
 
 # Add additional plugins for FluxTrainer
 pushd /opt/comfyui/custom_nodes || exit
+git clone https://github.com/ltdrdata/ComfyUI-Manager comfyui-manager
 git clone https://github.com/kijai/ComfyUI-FluxTrainer.git
 git clone https://github.com/kijai/ComfyUI-KJNodes.git
 git clone https://github.com/rgthree/rgthree-comfy.git
+git clone https://github.com/orssorbit/ComfyUI-wanBlockswap
+git clone https://github.com/rgthree/rgthree-comfy
+git clone https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite
+git clone https://github.com/jamesWalker55/comfyui-various
+git clone https://github.com/Smirnov75/ComfyUI-mxToolkit
+git clone https://github.com/Fannovel16/ComfyUI-Frame-Interpolation
+git clone https://github.com/pythongosssss/ComfyUI-Custom-Scripts
+git clone https://github.com/DoctorDiffusion/ComfyUI-MediaMixer
+git clone https://github.com/city96/ComfyUI-GGUF
 popd || exit
 
 # The custom nodes that were installed using the ComfyUI Manager may have requirements of their own, which are not installed when the container is
 # started for the first time; this loops over all custom nodes and installs the requirements of each custom node
 echo "Installing requirements for custom nodes..."
 for CUSTOM_NODE_DIRECTORY in /opt/comfyui/custom_nodes/*; do
-    if [ "$CUSTOM_NODE_DIRECTORY" != "/opt/comfyui/custom_nodes/ComfyUI-Manager" ]; then
-        if [ -f "$CUSTOM_NODE_DIRECTORY/requirements.txt" ]; then
-            CUSTOM_NODE_NAME=${CUSTOM_NODE_DIRECTORY##*/}
-            CUSTOM_NODE_NAME=${CUSTOM_NODE_NAME//[-_]/ }
-            echo "Installing requirements for $CUSTOM_NODE_NAME..."
-            pip install --requirement "$CUSTOM_NODE_DIRECTORY/requirements.txt"
-        fi
+    if [ -f "$CUSTOM_NODE_DIRECTORY/requirements.txt" ]; then
+        CUSTOM_NODE_NAME=${CUSTOM_NODE_DIRECTORY##*/}
+        CUSTOM_NODE_NAME=${CUSTOM_NODE_NAME//[-_]/ }
+        echo "Installing requirements for $CUSTOM_NODE_NAME..."
+        pip install --requirement "$CUSTOM_NODE_DIRECTORY/requirements.txt"
     fi
 done
 
