@@ -66,28 +66,66 @@ for CUSTOM_NODE_DIRECTORY in /opt/comfyui/custom_nodes/*; do
     fi
 done
 
+WGET_COMMAND="wget --continue -T 5 -t 5 -r"
+WGET_PIDS=()
+WGET_LOG_FILE=$HOME/wget.log
+echo >"$WGET_LOG_FILE"
+
+download_model() {
+    if [ -f "$2" ]; then
+        echo "File $2 already exists, skipping download."
+        return 0
+    fi
+    $WGET_COMMAND "$1" -O "$2" >>$WGET_LOG_FILE 2>&1 &
+    WGET_PIDS+=("$!")
+}
+
 # Installing Base Models for WAN flow
 echo "Installing Base Models for WAN flow..."
-wget https://huggingface.co/ai-forever/Real-ESRGAN/resolve/main/RealESRGAN_x2.pth -O /opt/comfyui/models/upscale_models/RealESRGAN_x2.pth
-wget https://huggingface.co/ai-forever/Real-ESRGAN/resolve/main/RealESRGAN_x4.pth -O /opt/comfyui/models/upscale_models/RealESRGAN_x4.pth
-wget https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/text_encoders/umt5_xxl_fp16.safetensors -O /opt/comfyui/models/clip/umt5_xxl_fp16.safetensors
-wget https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors -O /opt/comfyui/models/clip/umt5_xxl_fp8_e4m3fn_scaled.safetensors
-wget https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/vae/wan_2.1_vae.safetensors -O /opt/comfyui/models/vae/wan_2.1_vae.safetensors
-
+download_model https://huggingface.co/ai-forever/Real-ESRGAN/resolve/main/RealESRGAN_x2.pth /opt/comfyui/models/upscale_models/RealESRGAN_x2.pth
+download_model https://huggingface.co/ai-forever/Real-ESRGAN/resolve/main/RealESRGAN_x4.pth /opt/comfyui/models/upscale_models/RealESRGAN_x4.pth
+download_model https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/text_encoders/umt5_xxl_fp16.safetensors /opt/comfyui/models/clip/umt5_xxl_fp16.safetensors
+download_model https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors /opt/comfyui/models/clip/umt5_xxl_fp8_e4m3fn_scaled.safetensors
+download_model https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/vae/wan_2.1_vae.safetensors /opt/comfyui/models/vae/wan_2.1_vae.safetensors
 # LORAs
 echo "Installing LORAs for WAN flow..."
-wget https://huggingface.co/lightx2v/Wan2.1-I2V-14B-480P-StepDistill-CfgDistill-Lightx2v/resolve/main/loras/Wan21_I2V_14B_lightx2v_cfg_step_distill_lora_rank64.safetensors -O /opt/comfyui/models/loras/Wan21_I2V_14B_lightx2v_cfg_step_distill_lora_rank64.safetensors
+download_model https://huggingface.co/lightx2v/Wan2.1-I2V-14B-480P-StepDistill-CfgDistill-Lightx2v/resolve/main/loras/Wan21_I2V_14B_lightx2v_cfg_step_distill_lora_rank64.safetensors /opt/comfyui/models/loras/Wan21_I2V_14B_lightx2v_cfg_step_distill_lora_rank64.safetensors
 
 # UNETs
 ## txt2vid
 echo "Installing UNETs for WAN flow txt2vid..."
-wget https://huggingface.co/bullerwins/Wan2.2-I2V-A14B-GGUF/resolve/main/wan2.2_i2v_high_noise_14B_Q4_K_M.gguf -O /opt/comfyui/models/unet/wan2.2_i2v_high_noise_14B_Q4_K_M.gguf
-wget https://huggingface.co/bullerwins/Wan2.2-I2V-A14B-GGUF/resolve/main/wan2.2_i2v_low_noise_14B_Q4_K_M.gguf -O /opt/comfyui/models/unet/wan2.2_i2v_low_noise_14B_Q4_K_M.gguf
+download_model https://huggingface.co/bullerwins/Wan2.2-I2V-A14B-GGUF/resolve/main/wan2.2_i2v_high_noise_14B_Q4_K_M.gguf /opt/comfyui/models/unet/wan2.2_i2v_high_noise_14B_Q4_K_M.gguf
+download_model https://huggingface.co/bullerwins/Wan2.2-I2V-A14B-GGUF/resolve/main/wan2.2_i2v_low_noise_14B_Q4_K_M.gguf /opt/comfyui/models/unet/wan2.2_i2v_low_noise_14B_Q4_K_M.gguf
 
 ## img2vid
 echo "Installing UNETs for WAN flow img2vid..."
-wget https://huggingface.co/bullerwins/Wan2.2-T2V-A14B-GGUF/resolve/main/wan2.2_t2v_high_noise_14B_Q4_K_M.gguf -O /opt/comfyui/models/unet/wan2.2_t2v_high_noise_14B_Q4_K_M.gguf
-wget https://huggingface.co/bullerwins/Wan2.2-T2V-A14B-GGUF/resolve/main/wan2.2_t2v_low_noise_14B_Q4_K_M.gguf -O /opt/comfyui/models/unet/wan2.2_t2v_low_noise_14B_Q4_K_M.gguf
+download_model https://huggingface.co/bullerwins/Wan2.2-T2V-A14B-GGUF/resolve/main/wan2.2_t2v_high_noise_14B_Q4_K_M.gguf /opt/comfyui/models/unet/wan2.2_t2v_high_noise_14B_Q4_K_M.gguf
+download_model https://huggingface.co/bullerwins/Wan2.2-T2V-A14B-GGUF/resolve/main/wan2.2_t2v_low_noise_14B_Q4_K_M.gguf /opt/comfyui/models/unet/wan2.2_t2v_low_noise_14B_Q4_K_M.gguf
+
+# Wait for all wget background processes to finish, tailing the wget log while any are running
+
+while :; do
+    echo "--------------------------------"
+    echo "Waiting for WAN flow model parallel downloads to complete..."
+    echo "--------------------------------"
+
+    # Remove finished PIDs from the array
+    ALIVE_PIDS=()
+    for pid in "${WGET_PIDS[@]}"; do
+        if kill -0 "$pid" 2>/dev/null; then
+            ALIVE_PIDS+=("$pid")
+        fi
+    done
+    WGET_PIDS=("${ALIVE_PIDS[@]}")
+    if [ "${#WGET_PIDS[@]}" -eq 0 ]; then
+        break
+    fi
+    # Tail the last 20 lines of the wget log
+    tail -n 20 "$WGET_LOG_FILE"
+    sleep 1
+done
+
+echo "WAN flow models installed"
 
 LOG_FILE=$HOME/logs
 
