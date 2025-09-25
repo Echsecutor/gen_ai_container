@@ -4,7 +4,12 @@
  */
 
 // Import all modules
-import { downloadConvertedImages, testApiToken } from "./js/api.js";
+import {
+  downloadConversionResult,
+  getConversionStatus,
+  startImageConversion,
+  testApiToken,
+} from "./js/api.js";
 import "./js/config.js"; // Import to initialize ConfigManager
 import {
   cancelDownload,
@@ -170,7 +175,7 @@ class App {
   }
 
   /**
-   * Downloads converted images as ZIP file
+   * Downloads converted images as ZIP file using async API with progress tracking
    */
   async downloadConvertedImages() {
     const directoryInput = document.getElementById("imageDirectory");
@@ -187,17 +192,107 @@ class App {
       return;
     }
 
+    let conversionId = null;
+    let pollingInterval = null;
+
     try {
-      // Show loading status
+      // Show initial loading status
       if (statusDiv) {
         statusDiv.innerHTML =
-          '<div class="loading">Converting and preparing images...</div>';
+          '<div class="loading">Starting image conversion...</div>';
       }
 
       showToast("Starting image conversion...", "info");
 
-      // Call the API to get the ZIP file
-      const blob = await downloadConvertedImages(directory);
+      // Start the conversion
+      const result = await startImageConversion(directory);
+      conversionId = result.conversion_id;
+
+      showToast("Conversion started! Tracking progress...", "info");
+
+      // Poll for conversion status
+      pollingInterval = setInterval(async () => {
+        try {
+          const status = await getConversionStatus(conversionId);
+          this.updateConversionStatus(status, statusDiv);
+
+          if (status.status === "completed") {
+            clearInterval(pollingInterval);
+            await this.downloadCompletedConversion(conversionId);
+          } else if (status.status === "failed") {
+            clearInterval(pollingInterval);
+            showToast(`Conversion failed: ${status.error_message}`, "error");
+            if (statusDiv) {
+              statusDiv.innerHTML = `<div class="error">❌ Conversion failed: ${status.error_message}</div>`;
+            }
+          }
+        } catch (error) {
+          console.error("Error polling conversion status:", error);
+          clearInterval(pollingInterval);
+          showToast("Error checking conversion status", "error");
+        }
+      }, 1000); // Poll every second
+    } catch (error) {
+      console.error("Image conversion failed:", error);
+      showToast(`Conversion failed: ${error.message}`, "error");
+
+      if (statusDiv) {
+        statusDiv.innerHTML = `<div class="error">❌ ${error.message}</div>`;
+      }
+
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+      }
+    }
+  }
+
+  /**
+   * Updates the conversion status display
+   * @param {Object} status - Conversion status object
+   * @param {HTMLElement} statusDiv - Status display element
+   */
+  updateConversionStatus(status, statusDiv) {
+    if (!statusDiv) return;
+
+    const progressPercent = status.progress || 0;
+    const processedFiles = status.processed_files || 0;
+    const totalFiles = status.total_files || 0;
+    const currentFile = status.current_file || "";
+
+    let statusHtml = "";
+
+    if (status.status === "processing") {
+      statusHtml = `
+        <div class="conversion-progress">
+          <div class="conversion-info">
+            <h4>Converting Images...</h4>
+            <p>Processing: ${processedFiles} / ${totalFiles} files</p>
+            ${
+              currentFile
+                ? `<p class="current-file">Current: ${currentFile}</p>`
+                : ""
+            }
+          </div>
+          <div class="progress-bar-container">
+            <div class="progress-bar" style="width: ${progressPercent}%"></div>
+          </div>
+          <p class="progress-text">${progressPercent.toFixed(1)}% complete</p>
+        </div>
+      `;
+    } else if (status.status === "pending") {
+      statusHtml = '<div class="loading">Preparing conversion...</div>';
+    }
+
+    statusDiv.innerHTML = statusHtml;
+  }
+
+  /**
+   * Downloads a completed conversion
+   * @param {string} conversionId - Conversion ID
+   */
+  async downloadCompletedConversion(conversionId) {
+    try {
+      const blob = await downloadConversionResult(conversionId);
 
       // Create download link
       const url = window.URL.createObjectURL(blob);
@@ -221,21 +316,18 @@ class App {
 
       showToast("Images converted and downloaded successfully!", "success");
 
+      const statusDiv = document.getElementById("conversionStatus");
       if (statusDiv) {
         statusDiv.innerHTML =
-          '<div class="success">✅ Download completed successfully</div>';
+          '<div class="success">✅ Conversion completed and downloaded successfully</div>';
         // Clear status after 5 seconds
         setTimeout(() => {
           statusDiv.innerHTML = "";
         }, 5000);
       }
     } catch (error) {
-      console.error("Image conversion download failed:", error);
+      console.error("Download completed conversion failed:", error);
       showToast(`Download failed: ${error.message}`, "error");
-
-      if (statusDiv) {
-        statusDiv.innerHTML = `<div class="error">❌ ${error.message}</div>`;
-      }
     }
   }
 

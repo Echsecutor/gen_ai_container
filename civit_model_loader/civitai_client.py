@@ -105,12 +105,17 @@ class CivitaiClient:
 
     async def download_file_async(self, download_url: str, file_path: str,
                                   progress_callback=None, api_token: Optional[str] = None):
-        """Download a file asynchronously with progress tracking"""
+        """Download a file asynchronously with progress tracking and better timeout handling"""
         headers = {}
         if api_token:
             headers["Authorization"] = f"Bearer {api_token}"
 
-        timeout = aiohttp.ClientTimeout(total=None, connect=30)
+        # Increase timeouts for large files
+        timeout = aiohttp.ClientTimeout(
+            total=None,  # No total timeout for large files
+            connect=60,  # 60 seconds to connect
+            sock_read=60  # 60 seconds between reads
+        )
 
         try:
             async with aiohttp.ClientSession(timeout=timeout) as session:
@@ -119,23 +124,43 @@ class CivitaiClient:
 
                     total_size = int(response.headers.get('content-length', 0))
                     downloaded_size = 0
+                    chunk_size = 32768  # Increased chunk size for better performance
+
+                    logger.info(f"Starting download: {
+                                file_path}, Total size: {total_size} bytes")
 
                     # Use aiofiles for async file writing
                     async with aiofiles.open(file_path, 'wb') as f:
-                        async for chunk in response.content.iter_chunked(8192):
+                        async for chunk in response.content.iter_chunked(chunk_size):
                             await f.write(chunk)
                             downloaded_size += len(chunk)
 
                             # Call progress callback if provided
                             if progress_callback:
-                                progress_callback(downloaded_size, total_size)
+                                try:
+                                    progress_callback(
+                                        downloaded_size, total_size)
+                                except Exception as e:
+                                    logger.warning(
+                                        f"Progress callback error: {e}")
 
-                            # Yield control periodically to avoid blocking
-                            if downloaded_size % (8192 * 10) == 0:  # Every ~80KB
+                            # Yield control less frequently for better performance
+                            if downloaded_size % (chunk_size * 5) == 0:  # Every ~160KB
                                 await asyncio.sleep(0.001)
 
+                    logger.info(f"Download completed: {file_path}, Downloaded: {
+                                downloaded_size} bytes")
                     return downloaded_size
 
-        except (aiohttp.ClientError, asyncio.TimeoutError) as e:
-            logger.error(f"Error downloading file from {download_url}: {e}")
+        except asyncio.TimeoutError as e:
+            logger.error(f"Download timeout for {download_url}: {e}")
+            raise Exception(
+                f"Download timeout: The download took too long to complete")
+        except aiohttp.ClientError as e:
+            logger.error(f"HTTP error downloading file from {
+                         download_url}: {e}")
+            raise Exception(f"Download failed: {str(e)}")
+        except Exception as e:
+            logger.error(f"Unexpected error downloading file from {
+                         download_url}: {e}")
             raise

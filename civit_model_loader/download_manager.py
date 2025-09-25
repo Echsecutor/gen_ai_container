@@ -4,6 +4,8 @@ import uuid
 from typing import Dict, Optional
 from pathlib import Path
 import logging
+from datetime import datetime
+import time
 from models import DownloadInfo, DownloadStatus, DownloadRequest
 from civitai_client import CivitaiClient
 
@@ -46,7 +48,8 @@ class DownloadManager:
                 file_id=request.file_id,
                 filename=filename,
                 status=DownloadStatus.PENDING,
-                total_size=total_size
+                total_size=total_size,
+                start_time=datetime.now().isoformat()
             )
 
             self.downloads[download_id] = download_info
@@ -63,7 +66,7 @@ class DownloadManager:
             raise
 
     async def _download_file(self, download_id: str, request: DownloadRequest):
-        """Download a file asynchronously"""
+        """Download a file asynchronously with enhanced error handling and progress tracking"""
         download_info = self.downloads[download_id]
 
         try:
@@ -80,33 +83,111 @@ class DownloadManager:
             file_path = self.models_dir / download_info.filename
             download_info.file_path = str(file_path)
 
-            # Progress callback to update download info
+            logger.info(f"Starting download for {
+                        download_id}: {download_info.filename}")
+
+            # Enhanced progress callback with timing and speed tracking
+            start_time = time.time()
+            last_update_time = start_time
+            last_downloaded_size = 0
+
             def progress_callback(downloaded_size: int, total_size: int):
+                nonlocal last_update_time, last_downloaded_size
+
+                current_time = time.time()
                 download_info.downloaded_size = downloaded_size
-                if total_size > 0:
-                    download_info.progress = downloaded_size / total_size * 100
+
+                # Calculate progress percentage
+                effective_total = total_size or download_info.total_size or 0
+                if effective_total > 0:
+                    download_info.progress = (
+                        downloaded_size / effective_total) * 100
                 else:
-                    # Fallback to original total_size if content-length not available
-                    if download_info.total_size:
-                        download_info.progress = downloaded_size / download_info.total_size * 100
+                    download_info.progress = 0
+
+                # Calculate download speed and ETA
+                elapsed_time = current_time - start_time
+                if elapsed_time > 0 and downloaded_size > 0:
+                    download_info.download_speed = downloaded_size / elapsed_time
+
+                    # Calculate ETA if we have total size and speed
+                    if effective_total > 0 and download_info.download_speed > 0:
+                        remaining_bytes = effective_total - downloaded_size
+                        download_info.eta_seconds = int(
+                            remaining_bytes / download_info.download_speed)
+
+                # Update tracking for stall detection
+                if downloaded_size > last_downloaded_size:
+                    last_update_time = current_time
+                    last_downloaded_size = downloaded_size
+
+                # Log progress for large downloads
+                # Every 10MB
+                if downloaded_size > 0 and downloaded_size % (1024 * 1024 * 10) == 0:
+                    speed_mb = (download_info.download_speed or 0) / \
+                        (1024 * 1024)
+                    eta_str = f"ETA: {
+                        download_info.eta_seconds}s" if download_info.eta_seconds else "ETA: unknown"
+                    logger.info(f"Download progress {download_id}: {downloaded_size / (1024*1024):.1f}MB / {effective_total / (
+                        1024*1024):.1f}MB ({download_info.progress:.1f}%) - Speed: {speed_mb:.1f}MB/s - {eta_str}")
 
             # Download with async I/O - this won't block the event loop
-            await client.download_file_async(
+            downloaded_size = await client.download_file_async(
                 download_url,
                 str(file_path),
                 progress_callback=progress_callback,
                 api_token=request.api_token
             )
 
-            download_info.status = DownloadStatus.COMPLETED
-            download_info.progress = 100.0
+            # Verify download completed successfully
+            if file_path.exists() and file_path.stat().st_size > 0:
+                download_info.status = DownloadStatus.COMPLETED
+                download_info.progress = 100.0
+                download_info.downloaded_size = downloaded_size
+                download_info.end_time = datetime.now().isoformat()
 
-            logger.info(f"Download completed: {download_info.filename}")
+                # Final speed calculation
+                total_time = time.time() - start_time
+                if total_time > 0:
+                    download_info.download_speed = downloaded_size / total_time
+
+                logger.info(f"Download completed successfully: {
+                            download_info.filename} ({downloaded_size} bytes) in {total_time:.1f}s")
+            else:
+                raise Exception("Downloaded file is empty or missing")
+
+        except asyncio.CancelledError:
+            download_info.status = DownloadStatus.FAILED
+            download_info.error_message = "Download was cancelled"
+            logger.info(f"Download cancelled: {download_id}")
+
+            # Clean up partial file
+            if download_info.file_path and Path(download_info.file_path).exists():
+                try:
+                    Path(download_info.file_path).unlink()
+                    logger.info(f"Cleaned up partial file: {
+                                download_info.file_path}")
+                except Exception as cleanup_error:
+                    logger.warning(f"Failed to clean up partial file: {
+                                   cleanup_error}")
 
         except Exception as e:
             download_info.status = DownloadStatus.FAILED
             download_info.error_message = str(e)
             logger.error(f"Download failed for {download_id}: {e}")
+
+            # Clean up partial file on error
+            if download_info.file_path and Path(download_info.file_path).exists():
+                try:
+                    file_size = Path(download_info.file_path).stat().st_size
+                    # Less than 90% complete
+                    if file_size < (download_info.total_size or 0) * 0.9:
+                        Path(download_info.file_path).unlink()
+                        logger.info(f"Cleaned up incomplete file: {
+                                    download_info.file_path}")
+                except Exception as cleanup_error:
+                    logger.warning(f"Failed to clean up incomplete file: {
+                                   cleanup_error}")
 
         finally:
             # Remove from active downloads

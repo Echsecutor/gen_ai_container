@@ -484,6 +484,97 @@ section h2 {
   transition: width 0.3s ease;
 }
 
+.download-progress-bar.active {
+  background: linear-gradient(90deg, #4facfe, #00f2fe);
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: calc(200px + 100%) 0;
+  }
+}
+
+.download-details {
+  margin: 8px 0;
+  font-size: 0.9rem;
+  color: #4a5568;
+}
+
+.download-speed {
+  color: #2b6cb0;
+  font-weight: 500;
+}
+
+.download-eta {
+  color: #38a169;
+  font-weight: 500;
+}
+
+.download-timing {
+  margin: 6px 0;
+  font-size: 0.8rem;
+  color: #718096;
+}
+
+.download-progress-text {
+  font-weight: 500;
+}
+
+/* Conversion Progress Styles */
+.conversion-progress {
+  background: #f8f9fa;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 20px;
+  margin: 15px 0;
+}
+
+.conversion-info h4 {
+  margin: 0 0 10px 0;
+  color: #2d3748;
+  font-size: 1.1rem;
+}
+
+.conversion-info p {
+  margin: 5px 0;
+  color: #4a5568;
+  font-size: 0.9rem;
+}
+
+.current-file {
+  color: #2b6cb0 !important;
+  font-weight: 500;
+  font-style: italic;
+}
+
+.progress-bar-container {
+  width: 100%;
+  height: 12px;
+  background: #e2e8f0;
+  border-radius: 6px;
+  overflow: hidden;
+  margin: 10px 0;
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #4facfe, #00f2fe);
+  border-radius: 6px;
+  transition: width 0.3s ease;
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+.progress-text {
+  text-align: center;
+  font-weight: 500;
+  color: #2d3748;
+  margin: 5px 0 0 0;
+}
+
 .download-status {
   font-size: 0.8rem;
   font-weight: bold;

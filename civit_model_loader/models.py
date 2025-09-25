@@ -91,6 +91,10 @@ class DownloadInfo(BaseModel):
     downloaded_size: Optional[int] = None
     error_message: Optional[str] = None
     file_path: Optional[str] = None
+    start_time: Optional[str] = None  # ISO format timestamp
+    end_time: Optional[str] = None    # ISO format timestamp
+    download_speed: Optional[float] = None  # bytes per second
+    eta_seconds: Optional[int] = None  # estimated time to completion
 
 
 class ConfigExport(BaseModel):
@@ -130,3 +134,28 @@ class FileInfo(BaseModel):
 
 class ListFilesResponse(BaseModel):
     files: List[FileInfo]
+
+
+class ConversionRequest(BaseModel):
+    directory: str
+
+
+class ConversionStatus(str, Enum):
+    PENDING = "pending"
+    PROCESSING = "processing"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
+class ConversionInfo(BaseModel):
+    id: str
+    directory: str
+    status: ConversionStatus
+    progress: float = 0.0
+    processed_files: int = 0
+    total_files: int = 0
+    current_file: Optional[str] = None
+    error_message: Optional[str] = None
+    download_url: Optional[str] = None
+    start_time: Optional[str] = None
+    end_time: Optional[str] = None

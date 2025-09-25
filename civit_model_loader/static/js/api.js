@@ -219,7 +219,7 @@ export const checkFileExistence = withErrorHandler(async (files) => {
 }, "File existence check failed");
 
 /**
- * Download converted images as ZIP file
+ * Download converted images as ZIP file (legacy synchronous method)
  * @param {string} directory - Directory path to scan for PNG images
  * @returns {Promise<Blob>} - ZIP file blob
  */
@@ -244,6 +244,71 @@ export const downloadConvertedImages = withErrorHandler(async (directory) => {
 
   return await response.blob();
 }, "Image conversion download failed");
+
+/**
+ * Start image conversion asynchronously
+ * @param {string} directory - Directory path to scan for PNG images
+ * @returns {Promise<Object>} - Conversion response with conversion_id
+ */
+export const startImageConversion = withErrorHandler(async (directory) => {
+  return await apiClient.post("/api/start-conversion", {
+    directory: directory,
+  });
+}, "Failed to start image conversion");
+
+/**
+ * Get conversion status
+ * @param {string} conversionId - Conversion ID
+ * @returns {Promise<Object>} - Conversion status
+ */
+export const getConversionStatus = withErrorHandler(async (conversionId) => {
+  return await apiClient.get(`/api/conversions/${conversionId}`);
+}, "Failed to get conversion status");
+
+/**
+ * Get all conversion statuses
+ * @returns {Promise<Object>} - All conversion statuses
+ */
+export const getAllConversions = withErrorHandler(async () => {
+  return await apiClient.get("/api/conversions");
+}, "Failed to get conversions");
+
+/**
+ * Cancel a conversion
+ * @param {string} conversionId - Conversion ID to cancel
+ * @returns {Promise<Object>} - Cancel response
+ */
+export const cancelConversion = withErrorHandler(async (conversionId) => {
+  return await apiClient.delete(`/api/conversions/${conversionId}`);
+}, "Failed to cancel conversion");
+
+/**
+ * Download completed conversion result
+ * @param {string} conversionId - Conversion ID
+ * @returns {Promise<Blob>} - ZIP file blob
+ */
+export const downloadConversionResult = withErrorHandler(
+  async (conversionId) => {
+    const url = `/api/download-conversion/${conversionId}`;
+
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        Accept: "application/zip",
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(
+        `Download failed: ${response.status} ${response.statusText} - ${errorText}`
+      );
+    }
+
+    return await response.blob();
+  },
+  "Failed to download conversion result"
+);
 
 /**
  * List files in a directory with thumbnails for images

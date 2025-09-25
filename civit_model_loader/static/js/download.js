@@ -139,6 +139,57 @@ class DownloadManager {
         ? `<button onclick="window.cancelDownload('${download.id}')">Cancel</button>`
         : "";
 
+    // Enhanced progress information
+    let speedHtml = "";
+    let etaHtml = "";
+
+    if (download.status === "downloading") {
+      if (download.download_speed) {
+        const speedMBps = download.download_speed / (1024 * 1024);
+        speedHtml = `<span class="download-speed">Speed: ${speedMBps.toFixed(
+          1
+        )} MB/s</span>`;
+      }
+
+      if (download.eta_seconds && download.eta_seconds > 0) {
+        const hours = Math.floor(download.eta_seconds / 3600);
+        const minutes = Math.floor((download.eta_seconds % 3600) / 60);
+        const seconds = download.eta_seconds % 60;
+
+        let etaText = "";
+        if (hours > 0) {
+          etaText = `${hours}h ${minutes}m ${seconds}s`;
+        } else if (minutes > 0) {
+          etaText = `${minutes}m ${seconds}s`;
+        } else {
+          etaText = `${seconds}s`;
+        }
+
+        etaHtml = `<span class="download-eta">ETA: ${etaText}</span>`;
+      }
+    }
+
+    // Progress bar with visual enhancements
+    const progressBarClass =
+      download.status === "downloading"
+        ? "download-progress-bar active"
+        : "download-progress-bar";
+
+    // Time information
+    let timeHtml = "";
+    if (download.start_time) {
+      const startDate = new Date(download.start_time);
+      timeHtml = `<small class="download-time">Started: ${startDate.toLocaleTimeString()}</small>`;
+
+      if (download.end_time && download.status === "completed") {
+        const endDate = new Date(download.end_time);
+        const duration = (endDate - startDate) / 1000; // seconds
+        timeHtml += `<br><small class="download-time">Completed in: ${duration.toFixed(
+          1
+        )}s</small>`;
+      }
+    }
+
     return `
       <div class="download-item">
           <div class="download-info">
@@ -147,11 +198,18 @@ class DownloadManager {
                 download.status
               }">${download.status}</span></p>
               <div class="download-progress">
-                  <div class="download-progress-bar" style="width: ${progressPercent}%"></div>
+                  <div class="${progressBarClass}" style="width: ${progressPercent}%"></div>
               </div>
-              <p>${progressPercent.toFixed(
-                1
-              )}% - ${downloadedSize} / ${totalSize}</p>
+              <div class="download-details">
+                  <span class="download-progress-text">${progressPercent.toFixed(
+                    1
+                  )}% - ${downloadedSize} / ${totalSize}</span>
+                  ${speedHtml ? `<br>${speedHtml}` : ""}
+                  ${etaHtml ? ` • ${etaHtml}` : ""}
+              </div>
+              ${
+                timeHtml ? `<div class="download-timing">${timeHtml}</div>` : ""
+              }
               ${errorHtml}
           </div>
           ${cancelButtonHtml}

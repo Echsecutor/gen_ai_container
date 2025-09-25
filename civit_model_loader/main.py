@@ -13,9 +13,10 @@ from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
-from models import SearchRequest, DownloadRequest, DownloadInfo, ConfigExport, FileExistenceRequest, FileExistenceResponse, FileExistenceStatus, FileInfo, ListFilesResponse
+from models import SearchRequest, DownloadRequest, DownloadInfo, ConfigExport, FileExistenceRequest, FileExistenceResponse, FileExistenceStatus, FileInfo, ListFilesResponse, ConversionRequest, ConversionInfo
 from civitai_client import CivitaiClient
 from download_manager import DownloadManager
+from conversion_manager import ConversionManager
 from converter import convert_invokeai_to_a1111
 from thumbnail import get_thumbnail_base64, is_image_file
 
@@ -23,17 +24,19 @@ from thumbnail import get_thumbnail_base64, is_image_file
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Global download manager
+# Global managers
 download_manager = None
+conversion_manager = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
-    global download_manager
+    global download_manager, conversion_manager
     mount_dir = os.getenv("MOUNT_DIR", "/workspace")
     download_manager = DownloadManager(mount_dir)
-    logger.info(f"Download manager initialized with mount_dir: {mount_dir}")
+    conversion_manager = ConversionManager(mount_dir)
+    logger.info(f"Managers initialized with mount_dir: {mount_dir}")
     yield
     # Shutdown - could add cleanup here if needed
 
@@ -166,6 +169,86 @@ async def cancel_download(download_id: str):
         raise HTTPException(
             status_code=404, detail="Download not found or not active")
     return {"status": "cancelled"}
+
+
+@app.post("/api/start-conversion")
+async def start_image_conversion(request: Request):
+    """Start converting images asynchronously"""
+    try:
+        # Handle both application/json and text/plain content types
+        content_type = request.headers.get("content-type", "")
+
+        if content_type.startswith("text/plain"):
+            # Handle text/plain requests (CORS fallback)
+            body = await request.body()
+            request_data = json.loads(body.decode())
+        else:
+            # Handle normal JSON requests
+            request_data = await request.json()
+
+        # Parse the request data into ConversionRequest model
+        conversion_request = ConversionRequest(**request_data)
+
+        logger.info(f"Received conversion request: {conversion_request}")
+        conversion_id = conversion_manager.add_conversion(conversion_request)
+        return {"conversion_id": conversion_id, "status": "started"}
+    except Exception as e:
+        logger.error(f"Conversion error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/conversions/{conversion_id}")
+async def get_conversion_status(conversion_id: str):
+    """Get the status of a specific conversion"""
+    conversion_info = conversion_manager.get_conversion_status(conversion_id)
+    if not conversion_info:
+        raise HTTPException(status_code=404, detail="Conversion not found")
+    return conversion_info
+
+
+@app.get("/api/conversions")
+async def get_all_conversions():
+    """Get status of all conversions"""
+    return conversion_manager.get_all_conversions()
+
+
+@app.delete("/api/conversions/{conversion_id}")
+async def cancel_conversion(conversion_id: str):
+    """Cancel an active conversion"""
+    success = conversion_manager.cancel_conversion(conversion_id)
+    if not success:
+        raise HTTPException(
+            status_code=404, detail="Conversion not found or not active")
+    return {"status": "cancelled"}
+
+
+@app.get("/api/download-conversion/{conversion_id}")
+async def download_conversion_result(conversion_id: str):
+    """Download the ZIP file for a completed conversion"""
+    conversion_info = conversion_manager.get_conversion_status(conversion_id)
+    if not conversion_info:
+        raise HTTPException(status_code=404, detail="Conversion not found")
+
+    if conversion_info.status != "completed":
+        raise HTTPException(status_code=400, detail="Conversion not completed")
+
+    if not hasattr(conversion_info, '_zip_path') or not conversion_info._zip_path:
+        raise HTTPException(status_code=404, detail="Download file not found")
+
+    zip_path = conversion_info._zip_path
+    if not os.path.exists(zip_path):
+        raise HTTPException(
+            status_code=404, detail="Download file no longer exists")
+
+    zip_filename = os.path.basename(zip_path)
+
+    return FileResponse(
+        path=zip_path,
+        filename=zip_filename,
+        media_type='application/zip',
+        headers={
+            "Content-Disposition": f"attachment; filename={zip_filename}"}
+    )
 
 
 @app.post("/api/check-files")
@@ -413,9 +496,11 @@ async def list_files(folder: str = Query(default="/workspace/output/images")):
                         try:
                             thumbnail_base64 = get_thumbnail_base64(file_path)
                             if thumbnail_base64:
-                                file_info.thumbnail = f"data:image/jpeg;base64,{thumbnail_base64}"
+                                file_info.thumbnail = f"data:image/jpeg;base64,{
+                                    thumbnail_base64}"
                         except Exception as e:
-                            logger.warning(f"Failed to generate thumbnail for {file_path}: {e}")
+                            logger.warning(f"Failed to generate thumbnail for {
+                                           file_path}: {e}")
                             # Continue without thumbnail
 
                     file_list.append(file_info)

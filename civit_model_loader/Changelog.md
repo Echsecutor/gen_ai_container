@@ -2,6 +2,33 @@
 
 ## WIP
 
+- Enhanced download API with improved asynchronous handling and progress tracking
+
+  - Improved timeout handling for large file downloads with increased socket read timeouts (60s)
+  - Enhanced progress tracking with download speed, ETA calculations, and timing information
+  - Added comprehensive error handling with automatic cleanup of incomplete downloads
+  - Added detailed logging for download progress with status updates every 10MB
+  - Enhanced CivitaiClient with larger chunk sizes (32KB) for better download performance
+  - Updated DownloadInfo model with additional fields: start_time, end_time, download_speed, eta_seconds
+  - Improved download manager with better progress callbacks and file verification
+  - Added automatic cleanup of partial files on download failure or cancellation
+  - Enhanced frontend download queue UI with speed display, ETA, and timing information
+  - Added animated progress bars with shimmer effects for active downloads
+  - Improved CSS styling for download progress with visual indicators and status colors
+
+- Added asynchronous image conversion API with real-time progress tracking
+
+  - Created new ConversionManager class for handling async image conversion operations
+  - Added new API endpoints: `/api/start-conversion`, `/api/conversions/{id}`, `/api/download-conversion/{id}`
+  - Added ConversionInfo model with detailed progress tracking (processed_files, current_file, progress percentage)
+  - Implemented real-time progress updates with polling-based status checking in frontend
+  - Enhanced frontend with conversion progress display showing file counts, current file, and progress bar
+  - Added automatic download trigger when conversion completes successfully
+  - Improved error handling and cleanup for conversion operations
+  - Added CSS styling for conversion progress with animated progress bars
+  - Maintained backward compatibility with existing synchronous conversion endpoint
+  - Added automatic cleanup of old conversion files to prevent storage bloat
+
 - Unified search interface with both text and model ID search capabilities
 
   - Merged separate search sections into single interface with radio button mode toggle
