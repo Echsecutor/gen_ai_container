@@ -2,6 +2,16 @@
 
 ## WIP
 
+- Fixed conversion download issue where completed conversions wouldn't trigger browser download
+
+  - Added comprehensive debugging logs to conversion completion and download trigger functions
+  - Enhanced error handling in `downloadCompletedConversion()` with detailed error reporting
+  - Added fallback download mechanism using `window.open()` if programmatic click fails
+  - Improved download cleanup with delayed cleanup to ensure download starts properly
+  - Added visual feedback with toast notifications during download process
+  - Fixed issue where users would see polling to `/api/downloads` (model downloads) instead of conversion downloads
+  - Enhanced status display to show download errors in the conversion status area
+
 - Fixed gallery lightbox to display full-size images instead of thumbnails
 
   - Added new `/api/serve-image` endpoint to serve full-size images from the server filesystem

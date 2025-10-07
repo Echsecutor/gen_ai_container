@@ -214,12 +214,20 @@ class App {
       pollingInterval = setInterval(async () => {
         try {
           const status = await getConversionStatus(conversionId);
+          console.log(`Conversion ${conversionId} status:`, status);
           this.updateConversionStatus(status, statusDiv);
 
           if (status.status === "completed") {
+            console.log(
+              `Conversion ${conversionId} completed, stopping polling and starting download`
+            );
             clearInterval(pollingInterval);
             await this.downloadCompletedConversion(conversionId);
           } else if (status.status === "failed") {
+            console.log(
+              `Conversion ${conversionId} failed:`,
+              status.error_message
+            );
             clearInterval(pollingInterval);
             showToast(`Conversion failed: ${status.error_message}`, "error");
             if (statusDiv) {
@@ -292,7 +300,11 @@ class App {
    */
   async downloadCompletedConversion(conversionId) {
     try {
+      console.log(`Starting download for conversion ${conversionId}`);
+      showToast("Starting download of converted images...", "info");
+
       const blob = await downloadConversionResult(conversionId);
+      console.log(`Downloaded blob size: ${blob.size} bytes`);
 
       // Create download link
       const url = window.URL.createObjectURL(blob);
@@ -307,12 +319,30 @@ class App {
         .slice(0, -5);
       a.download = `converted_images_${timestamp}.zip`;
 
+      console.log(`Triggering download with filename: ${a.download}`);
       document.body.appendChild(a);
-      a.click();
 
-      // Cleanup
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      // Try to trigger the download
+      try {
+        a.click();
+        console.log("Download click triggered successfully");
+      } catch (clickError) {
+        console.error("Error clicking download link:", clickError);
+        // Fallback: try using window.open
+        window.open(url, "_blank");
+      }
+
+      // Cleanup with a slight delay to ensure download starts
+      setTimeout(() => {
+        try {
+          window.URL.revokeObjectURL(url);
+          if (document.body.contains(a)) {
+            document.body.removeChild(a);
+          }
+        } catch (cleanupError) {
+          console.warn("Cleanup error:", cleanupError);
+        }
+      }, 1000);
 
       showToast("Images converted and downloaded successfully!", "success");
 
@@ -328,6 +358,12 @@ class App {
     } catch (error) {
       console.error("Download completed conversion failed:", error);
       showToast(`Download failed: ${error.message}`, "error");
+
+      // Also update the status div to show the error
+      const statusDiv = document.getElementById("conversionStatus");
+      if (statusDiv) {
+        statusDiv.innerHTML = `<div class="error">❌ Download failed: ${error.message}</div>`;
+      }
     }
   }
 
