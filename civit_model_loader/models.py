@@ -130,6 +130,7 @@ class FileInfo(BaseModel):
     filename: str
     full_path: str
     thumbnail: Optional[str] = None  # Base64-encoded thumbnail for images
+    image_url: Optional[str] = None  # URL to serve full-size image
 
 
 class ListFilesResponse(BaseModel):

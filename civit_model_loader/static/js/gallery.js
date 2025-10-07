@@ -268,9 +268,9 @@ class GalleryManager {
     this.currentImageIndex = index;
     const file = imageFiles[index];
 
-    // Set image source (use thumbnail for lightbox)
+    // Set image source (use full-size image URL if available, fallback to thumbnail)
     if (this.lightboxImage) {
-      this.lightboxImage.src = file.thumbnail;
+      this.lightboxImage.src = file.image_url || file.thumbnail;
       this.lightboxImage.alt = file.filename;
     }
 

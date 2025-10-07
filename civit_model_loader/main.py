@@ -488,16 +488,22 @@ async def list_files(folder: str = Query(default="/workspace/output/images")):
                     file_info = FileInfo(
                         filename=filename,
                         full_path=file_path,
-                        thumbnail=None
+                        thumbnail=None,
+                        image_url=None
                     )
 
-                    # Generate thumbnail if it's an image file
+                    # Generate thumbnail and image URL if it's an image file
                     if is_image_file(file_path):
                         try:
                             thumbnail_base64 = get_thumbnail_base64(file_path)
                             if thumbnail_base64:
                                 file_info.thumbnail = f"data:image/jpeg;base64,{
                                     thumbnail_base64}"
+
+                            # Create URL for full-size image
+                            from urllib.parse import quote
+                            file_info.image_url = f"/api/serve-image?file_path={
+                                quote(file_path)}"
                         except Exception as e:
                             logger.warning(f"Failed to generate thumbnail for {
                                            file_path}: {e}")
@@ -525,6 +531,72 @@ async def list_files(folder: str = Query(default="/workspace/output/images")):
         raise
     except Exception as e:
         logger.error(f"Unexpected error in list_files: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Internal server error: {str(e)}")
+
+
+@app.get("/api/serve-image")
+async def serve_image(file_path: str = Query(..., description="Full path to the image file")):
+    """
+    Serve a full-size image file from the server filesystem.
+
+    Args:
+        file_path: Full path to the image file on the server
+
+    Returns:
+        The image file as a response
+    """
+    try:
+        # Validate that the file exists and is actually a file
+        if not os.path.exists(file_path):
+            raise HTTPException(
+                status_code=404, detail=f"File not found: {file_path}")
+
+        if not os.path.isfile(file_path):
+            raise HTTPException(
+                status_code=400, detail=f"Path is not a file: {file_path}")
+
+        # Security check: ensure the file is an image
+        if not is_image_file(file_path):
+            raise HTTPException(
+                status_code=400, detail=f"File is not an image: {file_path}")
+
+        # Additional security: prevent path traversal attacks by ensuring the file is within allowed directories
+        # Add other allowed directories as needed
+        allowed_dirs = ["/workspace", "/tmp"]
+        if not any(os.path.abspath(file_path).startswith(os.path.abspath(allowed_dir)) for allowed_dir in allowed_dirs):
+            raise HTTPException(
+                status_code=403, detail="Access to this file path is not allowed")
+
+        # Determine the media type based on file extension
+        file_extension = os.path.splitext(file_path)[1].lower()
+        media_type_map = {
+            '.jpg': 'image/jpeg',
+            '.jpeg': 'image/jpeg',
+            '.png': 'image/png',
+            '.gif': 'image/gif',
+            '.webp': 'image/webp',
+            '.bmp': 'image/bmp',
+            '.tiff': 'image/tiff',
+            '.tif': 'image/tiff'
+        }
+
+        media_type = media_type_map.get(
+            file_extension, 'application/octet-stream')
+
+        logger.info(f"Serving image: {file_path} as {media_type}")
+
+        return FileResponse(
+            path=file_path,
+            media_type=media_type,
+            filename=os.path.basename(file_path)
+        )
+
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error serving image {file_path}: {e}")
         raise HTTPException(
             status_code=500, detail=f"Internal server error: {str(e)}")
 

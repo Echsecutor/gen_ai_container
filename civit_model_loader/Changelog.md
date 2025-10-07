@@ -2,6 +2,14 @@
 
 ## WIP
 
+- Fixed gallery lightbox to display full-size images instead of thumbnails
+
+  - Added new `/api/serve-image` endpoint to serve full-size images from the server filesystem
+  - Enhanced `FileInfo` model with `image_url` field for full-size image URLs
+  - Updated gallery lightbox to use full-size image URLs when available
+  - Added security checks to prevent path traversal attacks and ensure only image files are served
+  - Improved user experience with high-quality image viewing in the gallery
+
 - Enhanced download API with improved asynchronous handling and progress tracking
 
   - Improved timeout handling for large file downloads with increased socket read timeouts (60s)
