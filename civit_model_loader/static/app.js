@@ -194,6 +194,7 @@ class App {
 
     let conversionId = null;
     let pollingInterval = null;
+    let isDownloading = false;
 
     try {
       // Show initial loading status
@@ -217,11 +218,13 @@ class App {
           console.log(`Conversion ${conversionId} status:`, status);
           this.updateConversionStatus(status, statusDiv);
 
-          if (status.status === "completed") {
+          if (status.status === "completed" && !isDownloading) {
             console.log(
               `Conversion ${conversionId} completed, stopping polling and starting download`
             );
+            isDownloading = true;
             clearInterval(pollingInterval);
+            pollingInterval = null;
             await this.downloadCompletedConversion(conversionId);
           } else if (status.status === "failed") {
             console.log(
@@ -229,6 +232,7 @@ class App {
               status.error_message
             );
             clearInterval(pollingInterval);
+            pollingInterval = null;
             showToast(`Conversion failed: ${status.error_message}`, "error");
             if (statusDiv) {
               statusDiv.innerHTML = `<div class="error">❌ Conversion failed: ${status.error_message}</div>`;
@@ -237,6 +241,7 @@ class App {
         } catch (error) {
           console.error("Error polling conversion status:", error);
           clearInterval(pollingInterval);
+          pollingInterval = null;
           showToast("Error checking conversion status", "error");
         }
       }, 1000); // Poll every second

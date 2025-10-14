@@ -272,3 +272,26 @@
   - Added button styling with primary/danger variants
   - Responsive layout for mobile devices
   - Removes model from localStorage but doesn't delete actual file
+
+## 2025-10-14 - Fix Image Conversion Download Polling Issue
+
+### Fixed
+- **Frontend: Image conversion download polling continues after completion**
+  - Added `isDownloading` flag to prevent multiple simultaneous downloads
+  - Modified polling logic to check `!isDownloading` before triggering download
+  - Set `isDownloading = true` immediately when starting download to block subsequent attempts
+  - Set `pollingInterval = null` after `clearInterval()` for defensive cleanup
+  - Applied fix to failed and error handlers as well for consistency
+  
+### Technical Details
+The issue occurred because `clearInterval()` only prevents future ticks from being scheduled, but does not stop async functions that are already executing. When the conversion completed, multiple polling ticks could:
+1. Each see `status.status === "completed"`
+2. Each call `clearInterval()` (ineffective for already-running ticks)
+3. Each call `downloadCompletedConversion()` 
+4. Result in multiple binary blob downloads that blocked browser file save
+
+The fix uses an `isDownloading` flag as a mutex to ensure only the first completion handler proceeds with the download.
+
+### Files Modified
+- `civit_model_loader/static/app.js:195-247` - Added flag and updated polling logic
+
