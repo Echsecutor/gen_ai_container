@@ -3,60 +3,59 @@ import argparse
 import json
 import hashlib
 import logging
-from typing import Any
-from PIL import Image
-from PIL.PngImagePlugin import PngInfo
+from   typing import Any
+from   PIL import Image
+from   PIL.PngImagePlugin import PngInfo
 
 logger = logging.getLogger(__name__)
 
 
 # Define Sampler/Scheduler Information
 # Need to be updated whenever new Samplers are added to InvokeAI
+# Complete list from: https://github.com/invoke-ai/InvokeAI/blob/main/invokeai/backend/stable_diffusion/schedulers/schedulers.py
 sampler_info = {
-    'euler': {'name': 'Euler', 'type': 'Automatic'},
-    'deis': {'name': 'DEIS', 'type': 'Automatic'},
+    # Non-Karras variants
     'ddim': {'name': 'DDIM', 'type': 'Automatic'},
     'ddpm': {'name': 'DDPM', 'type': 'Automatic'},
-    'dpmpp_sde': {'name': 'DPM++ SDE', 'type': 'Automatic'},
+    'deis': {'name': 'DEIS', 'type': 'Automatic'},
+    'lms': {'name': 'LMS', 'type': 'Automatic'},
+    'pndm': {'name': 'PNDM', 'type': 'Automatic'},
+    'heun': {'name': 'Heun', 'type': 'Automatic'},
+    'euler': {'name': 'Euler', 'type': 'Automatic'},
+    'euler_a': {'name': 'Euler a', 'type': 'Automatic'},
+    'kdpm_2': {'name': 'KDPM 2', 'type': 'Automatic'},
+    'kdpm_2_a': {'name': 'KDPM 2a', 'type': 'Automatic'},
     'dpmpp_2s': {'name': 'DPM++ 2S', 'type': 'Automatic'},
     'dpmpp_2m': {'name': 'DPM++ 2M', 'type': 'Automatic'},
     'dpmpp_2m_sde': {'name': 'DPM++ 2M SDE', 'type': 'Automatic'},
-    'heun': {'name': 'Heun', 'type': 'Automatic'},
-    'kdpm_2': {'name': 'KDPM 2', 'type': 'Automatic'},
-    'lms': {'name': 'LMS', 'type': 'Automatic'},
-    'pndm': {'name': 'PNDM', 'type': 'Automatic'},
+    'dpmpp_3m': {'name': 'DPM++ 3M', 'type': 'Automatic'},
+    'dpmpp_sde': {'name': 'DPM++ SDE', 'type': 'Automatic'},
     'unipc': {'name': 'UniPC', 'type': 'Automatic'},
+    'lcm': {'name': 'LCM', 'type': 'Automatic'},
+    'tcd': {'name': 'TCD', 'type': 'Automatic'},
+    # Karras variants
+    'deis_k': {'name': 'DEIS', 'type': 'Karras'},
+    'lms_k': {'name': 'LMS', 'type': 'Karras'},
+    'heun_k': {'name': 'Heun', 'type': 'Karras'},
     'euler_k': {'name': 'Euler', 'type': 'Karras'},
-    'dpmpp_sde_k': {'name': 'DPM++ SDE', 'type': 'Karras'},
+    'kdpm_2_k': {'name': 'KDPM 2', 'type': 'Karras'},
+    'kdpm_2_a_k': {'name': 'KDPM 2a', 'type': 'Karras'},
     'dpmpp_2s_k': {'name': 'DPM++ 2S', 'type': 'Karras'},
     'dpmpp_2m_k': {'name': 'DPM++ 2M', 'type': 'Karras'},
-    'dpmpp_3m_k': {'name': 'DPM++ 3M', 'type': 'Karras'},
     'dpmpp_2m_sde_k': {'name': 'DPM++ 2M SDE', 'type': 'Karras'},
-    'heun_k': {'name': 'Heun', 'type': 'Karras'},
-    'lms_k': {'name': 'LMS Karras', 'type': 'Karras'},
-    'euler_a': {'name': 'Euler a', 'type': 'Automatic'},
-    'kdpm_2_a': {'name': 'KDPM 2a', 'type': 'Automatic'},
-    'lcm': {'name': 'LCM', 'type': 'Automatic'},
-    'tcd': {'name': 'TCD', 'type': 'Automatic'}
+    'dpmpp_3m_k': {'name': 'DPM++ 3M', 'type': 'Karras'},
+    'dpmpp_sde_k': {'name': 'DPM++ SDE', 'type': 'Karras'},
+    'unipc_k': {'name': 'UniPC', 'type': 'Karras'},
 }
 
-
-def save_model_hash(basename: str, model_hash: str, hash_cache: Any, cache_dir: str = None) -> None:
+def save_model_hash(basename:str, model_hash:str, hash_cache:Any) -> None:
     # Save calculated model hash to cache so that it can be quickly recalled later
     hash_cache[basename] = model_hash
-
-    # Use /workspace as default if available, otherwise current directory
-    if cache_dir is None:
-        cache_dir = "/workspace" if os.path.exists("/workspace") else "."
-
-    cache_file = os.path.join(cache_dir, "hash_cache.json")
-    with open(cache_file, "w") as f:
+    with open("./hash_cache.json", "w") as f:
         f.write(json.dumps(hash_cache, indent=4))
 
 # From Automatic1111 source code (./modules/hashes.py)
-
-
-def calculate_sha256(filename: str) -> str:
+def calculate_sha256(filename:str) -> str:
     try:
         hash_sha256 = hashlib.sha256()
         blksize = 1024 * 1024
@@ -68,25 +67,19 @@ def calculate_sha256(filename: str) -> str:
         logger.error(f"File not found: {filename}")
         return "NOFILE"
 
-
-def calculate_shorthash(filename: str, hash_cache: Any, cache_dir: str = None) -> str:
+def calculate_shorthash(filename:str, hash_cache:Any) -> str:
     if os.path.basename(filename) in hash_cache and "NOFILE" != hash_cache[os.path.basename(filename)]:
         shorthash = hash_cache[os.path.basename(filename)]
     else:
-        logger.info(f"    Calculating model hash for "
-                    f"{os.path.basename(filename)}. This will take a few seconds...")
+        logger.info(f"    Calculating model hash for {os.path.basename(filename)}. This will take a few seconds...")
         longhash = calculate_sha256(filename)
         shorthash = longhash[0:10]
-        save_model_hash(os.path.basename(filename),
-                        shorthash, hash_cache, cache_dir)
+        save_model_hash(os.path.basename(filename), shorthash, hash_cache)
     return shorthash
 
-
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description="Convert InvokeAI generated images to Automatic1111 format, for easy upload to Civitai")
-    parser.add_argument("filename", type=str, nargs='+',
-                        help="PNG file generated by InvokeAI")
+    parser = argparse.ArgumentParser(description="Convert InvokeAI generated images to Automatic1111 format, for easy upload to Civitai")
+    parser.add_argument("filename", type=str, nargs='+', help="PNG file generated by InvokeAI")
     parser.add_argument(
         "-l",
         "--log",
@@ -94,10 +87,10 @@ def parse_args() -> argparse.Namespace:
         choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
         default="INFO")
     args = parser.parse_args()
-
+    
     logging.basicConfig(level=getattr(logging, args.log))
     logger.critical("Logger initialized at level " + args.log)
-
+    
     return args
 
 
@@ -107,296 +100,168 @@ def main() -> None:
 
     # Cache previously calculated hashes so that they can be quickly retrieved
     hash_cache = {}
-
+   
     args = parse_args()
 
-    # Use /workspace as config directory if available, otherwise current directory
-    config_dir = "/workspace" if os.path.exists("/workspace") else "."
-
-    config_file = os.path.join(config_dir, "invokeai_cfg.json")
-    if os.path.exists(config_file):
-        with open(config_file, "r") as f:
+    if os.path.exists("./invokeai_cfg.json"):
+        with open("./invokeai_cfg.json", "r") as f:
             logger.info("    Config file found")
             invokeai_cfg = json.load(f)
 
-    cache_file = os.path.join(config_dir, "hash_cache.json")
-    if os.path.exists(cache_file):
-        with open(cache_file, "r") as f:
+    if os.path.exists("./hash_cache.json"):
+        with open("./hash_cache.json", "r") as f:
             logger.info("    Hash cache found")
             hash_cache = json.load(f)
 
     file_count = len(args.filename)
-    successes = 0
+    successes  = 0
 
     for filename in args.filename:
-        # Generate output filename using the same pattern as before
-        new_filename = os.path.join(os.path.dirname(filename), os.path.basename(
-            filename).split('.')[0] + '_a1111.' + os.path.basename(filename).split('.')[1])
+        try:
+            # Load file and import metadata
+            logger.info(f"    Processing file: {filename}")
+            im_invoke = Image.open(filename)
+            im_invoke.load()
+            if 'invokeai_metadata' not in im_invoke.info:
+                logger.error(f"        ERROR: {filename} is not generated by InvokeAI! Skipping file...")
+                continue
+            json_data = json.loads(im_invoke.info['invokeai_metadata'])
 
-        # Use the extracted function to do the conversion
-        success, message = convert_image_metadata(
-            filename, new_filename, invokeai_cfg, hash_cache, config_dir)
+            # Check for inpainting
+            if '_canvas_objects' in json_data:
+                logger.info(f"        INFO: This is an in-painted image. Attempting to load metadata from original image")
+                if 'invokeai_output_folder' in invokeai_cfg:
+                    if 'imageName' in json_data['_canvas_objects'][0]:
+                        org_filename = json_data['_canvas_objects'][0]['imageName']
+                        org_filepath = os.path.join(invokeai_cfg['invokeai_output_folder'], org_filename)
+                        if os.path.exists(org_filepath):
+                            im_original = Image.open(org_filepath)
+                            im_original.load()
+                            json_data = json.loads(im_original.info['invokeai_metadata'])
+                            del im_original
+                        else:
+                            logger.error(f"        ERROR: Original image {org_filename} not found! Skipping file...")
+                            continue
+                else:
+                    logger.error(f"        ERROR: InvokeAI Output folder not configured in invokeai_cfg.json! Skipping file...")
+                    continue
 
-        if success:
+            # Build base metadata
+            meta_positive = json_data['positive_prompt']
+            meta_negative = ''
+            if 'negative_prompt' in json_data:
+                meta_negative = '\nNegative prompt: ' + json_data['negative_prompt']
+            meta_steps = '\nSteps: ' + str(json_data['steps'])
+            meta_sampler = ''
+            meta_type = ''
+            if 'scheduler' in json_data:
+                scheduler = json_data['scheduler']
+                if scheduler in sampler_info:
+                    meta_sampler = 'Sampler: ' + sampler_info[scheduler]['name']
+                    meta_type = 'Schedule type: ' + sampler_info[scheduler]['type']
+                else:
+                    logger.warning(f"        WARNING: Unknown scheduler '{scheduler}' not found in sampler_info. "
+                                 f"Using raw name as fallback. Please add this scheduler to the sampler_info dictionary.")
+                    meta_sampler = 'Sampler: ' + scheduler
+                    meta_type = ''
+            meta_cfg = ''
+            if 'cfg_scale' in json_data:
+                meta_cfg = 'CFG scale: ' + str(json_data['cfg_scale'])
+            meta_seed = 'Seed: ' + str(json_data['seed'])
+            meta_size = 'Size: ' + str(json_data['width']) + 'x' + str(json_data['height'])
+            meta_mname = 'Model: ' + json_data['model']['name']
+
+            # Build metadata for checkpoint model
+            if 'sha256:' in json_data['model']['hash']:
+                model_hash = json_data['model']['hash'].replace('sha256:','')[:10]
+                meta_mhash = 'Model hash: ' + model_hash
+                save_model_hash(f"{json_data['model']['name']}.safetensors", model_hash, hash_cache)
+            else:
+                logger.info("        Model hash is not sha256! Attempting to calculate hash from model file")
+                if 'model_folder' in invokeai_cfg:
+                    model_file = f"{invokeai_cfg['model_folder']}/{json_data['model']['name']}.safetensors"
+                    model_hash = calculate_shorthash(model_file, hash_cache)
+                    if model_hash != "NOFILE":
+                        meta_mhash = 'Model hash: ' + model_hash
+                    else:
+                        logger.error(f"        ERROR: Model file {model_file} not found! Skipping file...")
+                        continue
+                else:
+                    logger.error(f"        ERROR: Model folder not configured in invokeai_cfg.json! Skipping model {json_data['model']} ...")
+                    continue
+            meta_params = [meta_steps, meta_sampler, meta_type, meta_cfg, meta_seed, meta_size, meta_mhash, meta_mname]
+
+            # Build metadata for VAE model
+            if 'vae' in json_data.keys():
+                meta_vname = 'VAE: ' + json_data['vae']['name'] + '.safetensors'
+                if 'sha256:' in json_data['vae']['hash']:
+                    model_hash = json_data['vae']['hash'].replace('sha256:','')[:10]
+                    meta_vhash = 'VAE hash: ' + model_hash
+                    save_model_hash(f"{json_data['vae']['name']}.safetensors", model_hash, hash_cache)
+                else:
+                    logger.info("        Model hash is not sha256! Attempting to calculate hash from model file")
+                    if 'vae_folder' in invokeai_cfg:
+                        model_file=f"{invokeai_cfg['vae_folder']}/{json_data['vae']['name']}.safetensors"
+                        model_hash = calculate_shorthash(model_file, hash_cache)
+                        if model_hash != "NOFILE":
+                            meta_vhash = 'VAE hash: ' + model_hash
+                        else:
+                            logger.error(f"        ERROR: Model file {model_file} not found! Skipping file...")
+                            continue
+                    else:
+                        logger.error(f"        ERROR: Model folder not configured in invokeai_cfg.json! Skipping model {meta_vname}...")
+                        continue
+                meta_params.append(meta_vhash)
+                meta_params.append(meta_vname)
+
+            # Build metadata for LoRA model
+            if 'loras' in json_data.keys():
+                meta_lora = 'Lora hashes: "'
+                for idx, lora in enumerate(json_data['loras']):
+                    lora_name = lora['model']['name']
+                    if 'sha256:' in lora['model']['hash']:
+                        model_hash = lora['model']['hash'].replace('sha256:','')[:10]
+                        lora_hash = model_hash
+                        save_model_hash(f"{lora['model']['name']}.safetensors", model_hash, hash_cache)
+                    else:
+                        logger.info("        Model hash is not sha256! Attempting to calculate hash from model file")
+                        if 'lora_folder' in invokeai_cfg:
+                            model_file=f"{invokeai_cfg['lora_folder']}/{lora['model']['name']}.safetensors"
+                            lora_hash = calculate_shorthash(model_file, hash_cache)
+                            if lora_hash == "NOFILE":
+                                logger.error(f"        ERROR: Model file {model_file} not found! Skipping file...")
+                                continue
+                        else:
+                            logger.error(f"        ERROR: Model folder not configured in invokeai_cfg.json! Skipping LORA {lora_name}...")
+                            continue
+                    meta_lora += lora_name + ': ' + lora_hash
+                    meta_positive += ' <lora:' + lora_name + ':' + str(lora['weight']) + '>'
+                    if idx < len(json_data['loras']) - 1:
+                        meta_lora += ', '
+                meta_lora += '"'
+                meta_params.append(meta_lora)
+            meta_version = 'Version: v1.9.4' # Hard-code to imitate Automatic1111
+            meta_params.append(meta_version)
+            meta_final = meta_positive + meta_negative + ', '.join(meta_params)
+
+            # Create a PngInfo object to hold the metadata
+            metadata = PngInfo()
+            metadata.add_text("parameters", meta_final)
+
+            # Save the image with the metadata
+            new_filename = os.path.join(os.path.dirname(filename), os.path.basename(filename).split('.')[0] + '_a1111.' + os.path.basename(filename).split('.')[1])
+            im_invoke.save(new_filename, pnginfo=metadata)
+            logger.info(f"    Converted file saved as: {new_filename}")
             successes += 1
-        else:
-            logger.error(f"        Failed to convert {filename}: {message}")
+        except KeyError as e:
+            logger.error(f"        ERROR processing {filename}: Missing required field {e}. "
+                        f"This might indicate an unsupported scheduler or missing metadata. Skipping file...")
+            continue
+        except Exception as e:
+            logger.error(f"        ERROR processing {filename}: Unexpected error: {type(e).__name__}: {e}. Skipping file...")
             continue
 
-    logger.info(f"Work complete. "
-                f"{successes} / {file_count} files successfully converted.")
-
-
-def convert_image_metadata(input_file: str, output_file: str, invokeai_cfg: dict = None, hash_cache: dict = None, cache_dir: str = None) -> tuple[bool, str]:
-    """
-    Convert InvokeAI generated image metadata to Automatic1111 format.
-
-    Args:
-        input_file (str): Path to the input PNG file generated by InvokeAI
-        output_file (str): Path where the converted file should be saved
-        invokeai_cfg (dict, optional): Configuration dictionary with model folder paths
-        hash_cache (dict, optional): Cache for previously calculated model hashes
-        cache_dir (str, optional): Directory for config and cache files. Defaults to /workspace if available, otherwise current directory
-
-    Returns:
-        tuple[bool, str]: (success, message) - True if successful, False if failed with error message
-    """
-    # Initialize defaults if not provided
-    if invokeai_cfg is None:
-        invokeai_cfg = {}
-    if hash_cache is None:
-        hash_cache = {}
-    if cache_dir is None:
-        cache_dir = "/workspace" if os.path.exists("/workspace") else "."
-
-    try:
-        # Load file and import metadata
-        logger.info(f"    Processing file: {input_file}")
-        im_invoke = Image.open(input_file)
-        im_invoke.load()
-        if 'invokeai_metadata' not in im_invoke.info:
-            error_msg = f"ERROR: {input_file} is not generated by InvokeAI!"
-            logger.error(f"        {error_msg}")
-            return False, error_msg
-        json_data = json.loads(im_invoke.info['invokeai_metadata'])
-
-        # Check for inpainting
-        if '_canvas_objects' in json_data:
-            logger.info(
-                f"        INFO: This is an in-painted image. Attempting to load metadata from original image")
-            if 'invokeai_output_folder' in invokeai_cfg:
-                if 'imageName' in json_data['_canvas_objects'][0]:
-                    org_filename = json_data['_canvas_objects'][0]['imageName']
-                    org_filepath = os.path.join(
-                        invokeai_cfg['invokeai_output_folder'], org_filename)
-                    if os.path.exists(org_filepath):
-                        im_original = Image.open(org_filepath)
-                        im_original.load()
-                        json_data = json.loads(
-                            im_original.info['invokeai_metadata'])
-                        del im_original
-                    else:
-                        error_msg = f"ERROR: Original image " \
-                            f"{org_filename} not found!"
-                        logger.error(f"        {error_msg}")
-                        return False, error_msg
-            else:
-                error_msg = f"ERROR: InvokeAI Output folder not configured in invokeai_cfg.json!"
-                logger.error(f"        {error_msg}")
-                return False, error_msg
-
-        # Build base metadata
-        meta_positive = json_data['positive_prompt']
-        meta_negative = ''
-        if 'negative_prompt' in json_data:
-            meta_negative = '\nNegative prompt: ' + \
-                json_data['negative_prompt']
-        meta_steps = '\nSteps: ' + str(json_data['steps'])
-        meta_sampler = ''
-        meta_type = ''
-        if 'scheduler' in json_data:
-            meta_sampler = 'Sampler: ' + \
-                sampler_info[json_data['scheduler']]['name']
-            meta_type = 'Schedule type: ' + \
-                sampler_info[json_data['scheduler']]['type']
-        meta_cfg = ''
-        if 'cfg_scale' in json_data:
-            meta_cfg = 'CFG scale: ' + str(json_data['cfg_scale'])
-        meta_seed = 'Seed: ' + str(json_data['seed'])
-        meta_size = 'Size: ' + \
-            str(json_data['width']) + 'x' + str(json_data['height'])
-        meta_mname = 'Model: ' + json_data['model']['name']
-
-        # Build metadata for checkpoint model
-        if 'sha256:' in json_data['model']['hash']:
-            model_hash = json_data['model']['hash'].replace('sha256:', '')[:10]
-            meta_mhash = 'Model hash: ' + model_hash
-            save_model_hash(
-                f"{json_data['model']['name']}.safetensors", model_hash, hash_cache, cache_dir)
-        else:
-            logger.info(
-                "        Model hash is not sha256! Attempting to calculate hash from model file")
-            if 'model_folder' in invokeai_cfg:
-                model_file = f"{invokeai_cfg['model_folder']}/" \
-                    f"{json_data['model']['name']}.safetensors"
-                model_hash = calculate_shorthash(
-                    model_file, hash_cache, cache_dir)
-                if model_hash != "NOFILE":
-                    meta_mhash = 'Model hash: ' + model_hash
-                else:
-                    error_msg = f"ERROR: Model file {model_file} not found!"
-                    logger.error(f"        {error_msg}")
-                    return False, error_msg
-            else:
-                error_msg = f"ERROR: Model folder not configured in invokeai_cfg.json!"
-                logger.error(f"        {error_msg}")
-                return False, error_msg
-        meta_params = [meta_steps, meta_sampler, meta_type,
-                       meta_cfg, meta_seed, meta_size, meta_mhash, meta_mname]
-
-        # Build metadata for VAE model
-        if 'vae' in json_data.keys():
-            meta_vname = 'VAE: ' + json_data['vae']['name'] + '.safetensors'
-            if 'sha256:' in json_data['vae']['hash']:
-                model_hash = json_data['vae']['hash'].replace('sha256:', '')[
-                    :10]
-                meta_vhash = 'VAE hash: ' + model_hash
-                save_model_hash(
-                    f"{json_data['vae']['name']}.safetensors", model_hash, hash_cache, cache_dir)
-            else:
-                logger.info(
-                    "        Model hash is not sha256! Attempting to calculate hash from model file")
-                if 'vae_folder' in invokeai_cfg:
-                    model_file = f"{invokeai_cfg['vae_folder']}/" \
-                        f"{json_data['vae']['name']}.safetensors"
-                    model_hash = calculate_shorthash(
-                        model_file, hash_cache, cache_dir)
-                    if model_hash != "NOFILE":
-                        meta_vhash = 'VAE hash: ' + model_hash
-                    else:
-                        error_msg = f"ERROR: Model file " \
-                            f"{model_file} not found!"
-                        logger.error(f"        {error_msg}")
-                        return False, error_msg
-                else:
-                    error_msg = f"ERROR: Model folder not configured in invokeai_cfg.json!"
-                    logger.error(f"        {error_msg}")
-                    return False, error_msg
-            meta_params.append(meta_vhash)
-            meta_params.append(meta_vname)
-
-        # Build metadata for LoRA model
-        if 'loras' in json_data.keys():
-            meta_lora = 'Lora hashes: "'
-            for idx, lora in enumerate(json_data['loras']):
-                lora_name = lora['model']['name']
-                if 'sha256:' in lora['model']['hash']:
-                    model_hash = lora['model']['hash'].replace('sha256:', '')[
-                        :10]
-                    lora_hash = model_hash
-                    save_model_hash(
-                        f"{lora['model']['name']}.safetensors", model_hash, hash_cache, cache_dir)
-                else:
-                    logger.info(
-                        "        Model hash is not sha256! Attempting to calculate hash from model file")
-                    if 'lora_folder' in invokeai_cfg:
-                        model_file = f"{invokeai_cfg['lora_folder']}/" \
-                            f"{lora['model']['name']}.safetensors"
-                        lora_hash = calculate_shorthash(
-                            model_file, hash_cache, cache_dir)
-                        if lora_hash == "NOFILE":
-                            error_msg = f"ERROR: Model file " \
-                                f"{model_file} not found!"
-                            logger.error(f"        {error_msg}")
-                            return False, error_msg
-                    else:
-                        error_msg = f"ERROR: Model folder not configured in invokeai_cfg.json!"
-                        logger.error(f"        {error_msg}")
-                        return False, error_msg
-                meta_lora += lora_name + ': ' + lora_hash
-                meta_positive += ' <lora:' + lora_name + \
-                    ':' + str(lora['weight']) + '>'
-                if idx < len(json_data['loras']) - 1:
-                    meta_lora += ', '
-            meta_lora += '"'
-            meta_params.append(meta_lora)
-        meta_version = 'Version: v1.9.4'  # Hard-code to imitate Automatic1111
-        meta_params.append(meta_version)
-        meta_final = meta_positive + meta_negative + ', '.join(meta_params)
-
-        # Create a PngInfo object to hold the metadata
-        metadata = PngInfo()
-        metadata.add_text("parameters", meta_final)
-
-        # Save the image with the metadata
-        im_invoke.save(output_file, pnginfo=metadata)
-        success_msg = f"Converted file saved as: {output_file}"
-        logger.info(f"    {success_msg}")
-        return True, success_msg
-
-    except FileNotFoundError as e:
-        error_msg = f"File not found: {str(e)}"
-        logger.error(f"        ERROR: {error_msg}")
-        return False, error_msg
-    except json.JSONDecodeError as e:
-        error_msg = f"Invalid JSON in metadata: {str(e)}"
-        logger.error(f"        ERROR: {error_msg}")
-        return False, error_msg
-    except Exception as e:
-        error_msg = f"Unexpected error: {str(e)}"
-        logger.error(f"        ERROR: {error_msg}")
-        return False, error_msg
-
-
-def convert_invokeai_to_a1111(input_file: str, output_file: str, cache_dir: str = None) -> tuple[bool, str]:
-    """
-    Simplified function to convert InvokeAI generated image metadata to Automatic1111 format.
-
-    This function automatically loads configuration and hash cache from the specified directory.
-
-    Args:
-        input_file (str): Path to the input PNG file generated by InvokeAI
-        output_file (str): Path where the converted file should be saved
-        cache_dir (str, optional): Directory for config and cache files. Defaults to /workspace if available, otherwise current directory
-
-    Returns:
-        tuple[bool, str]: (success, message) - True if successful, False if failed with error message
-
-    Example:
-        success, message = convert_invokeai_to_a1111("input.png", "output_a1111.png")
-        if success:
-            print(f"Success: {message}")
-        else:
-            print(f"Error: {message}")
-    """
-    # Use /workspace as config directory if available, otherwise current directory
-    if cache_dir is None:
-        cache_dir = "/workspace" if os.path.exists("/workspace") else "."
-
-    # Load configuration if available
-    invokeai_cfg = {}
-    config_file = os.path.join(cache_dir, "invokeai_cfg.json")
-    if os.path.exists(config_file):
-        try:
-            with open(config_file, "r") as f:
-                invokeai_cfg = json.load(f)
-                logger.info("    Config file found and loaded")
-        except Exception as e:
-            logger.warning(f"    Failed to load config file: {e}")
-
-    # Load hash cache if available
-    hash_cache = {}
-    cache_file = os.path.join(cache_dir, "hash_cache.json")
-    if os.path.exists(cache_file):
-        try:
-            with open(cache_file, "r") as f:
-                hash_cache = json.load(f)
-                logger.info("    Hash cache found and loaded")
-        except Exception as e:
-            logger.warning(f"    Failed to load hash cache: {e}")
-
-    return convert_image_metadata(input_file, output_file, invokeai_cfg, hash_cache, cache_dir)
-
+    logger.info(f"Work complete. {successes} / {file_count} files successfully converted.")
 
 if __name__ == "__main__":
     main()
