@@ -10,6 +10,15 @@
   - Resolved UserWarning about field "model_id" having conflict with protected namespace "model_"
   - All API endpoints and data structures now use consistent `civitai_model_id` naming
 
+- Fixed converter permission errors in Docker containers
+
+  - Updated `save_model_hash()` function to accept `cache_dir` parameter and use proper cache directory path
+  - Updated `calculate_shorthash()` function to pass cache directory to hash saving operations
+  - Updated `convert_image_metadata()` and `convert_invokeai_to_a1111()` functions to properly handle cache directory permissions
+  - Added graceful fallback when hash cache cannot be written due to permission restrictions
+  - Resolved "Permission denied: './hash_cache.json'" errors during image conversion in Docker containers
+  - Conversion now works correctly with writable cache directories (defaults to `/workspace` in containers)
+
 - Fixed conversion download issue where completed conversions wouldn't trigger browser download
 
   - Added comprehensive debugging logs to conversion completion and download trigger functions

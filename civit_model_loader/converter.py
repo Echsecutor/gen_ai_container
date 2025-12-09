@@ -48,11 +48,17 @@ sampler_info = {
     'unipc_k': {'name': 'UniPC', 'type': 'Karras'},
 }
 
-def save_model_hash(basename:str, model_hash:str, hash_cache:Any) -> None:
+def save_model_hash(basename:str, model_hash:str, hash_cache:Any, cache_dir:str = ".") -> None:
     # Save calculated model hash to cache so that it can be quickly recalled later
     hash_cache[basename] = model_hash
-    with open("./hash_cache.json", "w") as f:
-        f.write(json.dumps(hash_cache, indent=4))
+    cache_path = os.path.join(cache_dir, "hash_cache.json")
+    try:
+        with open(cache_path, "w") as f:
+            f.write(json.dumps(hash_cache, indent=4))
+    except PermissionError:
+        # If we can't write to the cache directory, just skip saving the cache
+        # The conversion will still work, just without persistent hash caching
+        logger.warning(f"Cannot write hash cache to {cache_path} due to permissions. Conversion will continue without persistent caching.")
 
 # From Automatic1111 source code (./modules/hashes.py)
 def calculate_sha256(filename:str) -> str:
@@ -67,14 +73,14 @@ def calculate_sha256(filename:str) -> str:
         logger.error(f"File not found: {filename}")
         return "NOFILE"
 
-def calculate_shorthash(filename:str, hash_cache:Any) -> str:
+def calculate_shorthash(filename:str, hash_cache:Any, cache_dir:str = ".") -> str:
     if os.path.basename(filename) in hash_cache and "NOFILE" != hash_cache[os.path.basename(filename)]:
         shorthash = hash_cache[os.path.basename(filename)]
     else:
         logger.info(f"    Calculating model hash for {os.path.basename(filename)}. This will take a few seconds...")
         longhash = calculate_sha256(filename)
         shorthash = longhash[0:10]
-        save_model_hash(os.path.basename(filename), shorthash, hash_cache)
+        save_model_hash(os.path.basename(filename), shorthash, hash_cache, cache_dir)
     return shorthash
 
 def parse_args() -> argparse.Namespace:
@@ -94,7 +100,7 @@ def parse_args() -> argparse.Namespace:
     return args
 
 
-def convert_image_metadata(input_file: str, output_file: str, invokeai_cfg: dict = None, hash_cache: dict = None) -> tuple[bool, str]:
+def convert_image_metadata(input_file: str, output_file: str, invokeai_cfg: dict = None, hash_cache: dict = None, cache_dir: str = ".") -> tuple[bool, str]:
     """
     Convert InvokeAI image metadata to Automatic1111 format.
     
@@ -169,12 +175,12 @@ def convert_image_metadata(input_file: str, output_file: str, invokeai_cfg: dict
         if 'sha256:' in json_data['model']['hash']:
             model_hash = json_data['model']['hash'].replace('sha256:','')[:10]
             meta_mhash = 'Model hash: ' + model_hash
-            save_model_hash(f"{json_data['model']['name']}.safetensors", model_hash, hash_cache)
+            save_model_hash(f"{json_data['model']['name']}.safetensors", model_hash, hash_cache, cache_dir)
         else:
             logger.info("Model hash is not sha256! Attempting to calculate hash from model file")
             if 'model_folder' in invokeai_cfg:
                 model_file = f"{invokeai_cfg['model_folder']}/{json_data['model']['name']}.safetensors"
-                model_hash = calculate_shorthash(model_file, hash_cache)
+                model_hash = calculate_shorthash(model_file, hash_cache, cache_dir)
                 if model_hash != "NOFILE":
                     meta_mhash = 'Model hash: ' + model_hash
                 else:
@@ -189,12 +195,12 @@ def convert_image_metadata(input_file: str, output_file: str, invokeai_cfg: dict
             if 'sha256:' in json_data['vae']['hash']:
                 model_hash = json_data['vae']['hash'].replace('sha256:','')[:10]
                 meta_vhash = 'VAE hash: ' + model_hash
-                save_model_hash(f"{json_data['vae']['name']}.safetensors", model_hash, hash_cache)
+                save_model_hash(f"{json_data['vae']['name']}.safetensors", model_hash, hash_cache, cache_dir)
             else:
                 logger.info("Model hash is not sha256! Attempting to calculate hash from model file")
                 if 'vae_folder' in invokeai_cfg:
                     model_file=f"{invokeai_cfg['vae_folder']}/{json_data['vae']['name']}.safetensors"
-                    model_hash = calculate_shorthash(model_file, hash_cache)
+                    model_hash = calculate_shorthash(model_file, hash_cache, ".")
                     if model_hash != "NOFILE":
                         meta_vhash = 'VAE hash: ' + model_hash
                     else:
@@ -212,12 +218,12 @@ def convert_image_metadata(input_file: str, output_file: str, invokeai_cfg: dict
                 if 'sha256:' in lora['model']['hash']:
                     model_hash = lora['model']['hash'].replace('sha256:','')[:10]
                     lora_hash = model_hash
-                    save_model_hash(f"{lora['model']['name']}.safetensors", model_hash, hash_cache)
+                    save_model_hash(f"{lora['model']['name']}.safetensors", model_hash, hash_cache, cache_dir)
                 else:
                     logger.info("Model hash is not sha256! Attempting to calculate hash from model file")
                     if 'lora_folder' in invokeai_cfg:
                         model_file=f"{invokeai_cfg['lora_folder']}/{lora['model']['name']}.safetensors"
-                        lora_hash = calculate_shorthash(model_file, hash_cache)
+                        lora_hash = calculate_shorthash(model_file, hash_cache, cache_dir)
                         if lora_hash == "NOFILE":
                             return False, f"ERROR: Model file {model_file} not found!"
                     else:
@@ -287,7 +293,7 @@ def convert_invokeai_to_a1111(input_file: str, output_file: str, cache_dir: str 
             logger.warning(f"Could not load hash cache {cache_path}: {e}")
     
     # Perform conversion
-    return convert_image_metadata(input_file, output_file, invokeai_cfg, hash_cache)
+    return convert_image_metadata(input_file, output_file, invokeai_cfg, hash_cache, cache_dir)
 
 
 def main() -> None:
@@ -371,12 +377,12 @@ def main() -> None:
             if 'sha256:' in json_data['model']['hash']:
                 model_hash = json_data['model']['hash'].replace('sha256:','')[:10]
                 meta_mhash = 'Model hash: ' + model_hash
-                save_model_hash(f"{json_data['model']['name']}.safetensors", model_hash, hash_cache)
+                save_model_hash(f"{json_data['model']['name']}.safetensors", model_hash, hash_cache, ".")
             else:
                 logger.info("        Model hash is not sha256! Attempting to calculate hash from model file")
                 if 'model_folder' in invokeai_cfg:
                     model_file = f"{invokeai_cfg['model_folder']}/{json_data['model']['name']}.safetensors"
-                    model_hash = calculate_shorthash(model_file, hash_cache)
+                    model_hash = calculate_shorthash(model_file, hash_cache, ".")
                     if model_hash != "NOFILE":
                         meta_mhash = 'Model hash: ' + model_hash
                     else:
@@ -393,12 +399,12 @@ def main() -> None:
                 if 'sha256:' in json_data['vae']['hash']:
                     model_hash = json_data['vae']['hash'].replace('sha256:','')[:10]
                     meta_vhash = 'VAE hash: ' + model_hash
-                    save_model_hash(f"{json_data['vae']['name']}.safetensors", model_hash, hash_cache)
+                    save_model_hash(f"{json_data['vae']['name']}.safetensors", model_hash, hash_cache, ".")
                 else:
                     logger.info("        Model hash is not sha256! Attempting to calculate hash from model file")
                     if 'vae_folder' in invokeai_cfg:
                         model_file=f"{invokeai_cfg['vae_folder']}/{json_data['vae']['name']}.safetensors"
-                        model_hash = calculate_shorthash(model_file, hash_cache)
+                        model_hash = calculate_shorthash(model_file, hash_cache, ".")
                         if model_hash != "NOFILE":
                             meta_vhash = 'VAE hash: ' + model_hash
                         else:
@@ -418,12 +424,12 @@ def main() -> None:
                     if 'sha256:' in lora['model']['hash']:
                         model_hash = lora['model']['hash'].replace('sha256:','')[:10]
                         lora_hash = model_hash
-                        save_model_hash(f"{lora['model']['name']}.safetensors", model_hash, hash_cache)
+                        save_model_hash(f"{lora['model']['name']}.safetensors", model_hash, hash_cache, ".")
                     else:
                         logger.info("        Model hash is not sha256! Attempting to calculate hash from model file")
                         if 'lora_folder' in invokeai_cfg:
                             model_file=f"{invokeai_cfg['lora_folder']}/{lora['model']['name']}.safetensors"
-                            lora_hash = calculate_shorthash(model_file, hash_cache)
+                            lora_hash = calculate_shorthash(model_file, hash_cache, ".")
                             if lora_hash == "NOFILE":
                                 logger.error(f"        ERROR: Model file {model_file} not found! Skipping file...")
                                 continue

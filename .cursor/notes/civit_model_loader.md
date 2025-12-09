@@ -510,3 +510,21 @@ app.js (main orchestrator)
   - **Frontend Code**: `download.js` and `api.js` request/response handling
 - **Benefits**: Eliminates warning messages and ensures compatibility with Pydantic v2 field naming conventions
 - **Testing**: All 101 tests pass successfully with no namespace conflict warnings
+
+### Converter Permission Errors Fix (December 2024)
+
+- **Issue**: Docker containers experienced "Permission denied: './hash_cache.json'" errors during image conversion
+- **Root Cause**: Converter functions were hardcoded to write hash cache to current directory (`./hash_cache.json`) which lacks write permissions in containers
+- **Solution**: Updated converter functions to accept and use configurable cache directory parameter
+- **Changes Made**:
+  - **`save_model_hash()`**: Added `cache_dir` parameter, uses `os.path.join()` for proper path construction, includes permission error handling
+  - **`calculate_shorthash()`**: Added `cache_dir` parameter and passes it to `save_model_hash()`
+  - **`convert_image_metadata()`**: Added `cache_dir` parameter and passes it to hash functions
+  - **`convert_invokeai_to_a1111()`**: Properly passes cache directory to conversion functions
+  - **Error Handling**: Added graceful fallback when cache directory is not writable
+- **Benefits**: 
+  - Conversion works correctly in Docker containers with proper cache directory (`/workspace`)
+  - Maintains backward compatibility with existing code
+  - Provides informative warnings when cache cannot be written
+  - Conversion continues successfully even without persistent hash caching
+- **Testing**: All converter tests pass, real image conversion works in Docker containers
