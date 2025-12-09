@@ -2,6 +2,14 @@
 
 ## WIP
 
+- Fixed Pydantic namespace conflict warning by renaming `model_id` field to `civitai_model_id`
+
+  - Updated all Pydantic models (`DownloadRequest`, `DownloadInfo`, `DownloadedModelFile`, `FileExistenceStatus`) to use `civitai_model_id` instead of `model_id`
+  - Updated backend Python code in `main.py`, `download_manager.py`, and `civitai_client.py` to use new field name
+  - Updated frontend JavaScript code in `download.js` and `api.js` to use new field name
+  - Resolved UserWarning about field "model_id" having conflict with protected namespace "model_"
+  - All API endpoints and data structures now use consistent `civitai_model_id` naming
+
 - Fixed conversion download issue where completed conversions wouldn't trigger browser download
 
   - Added comprehensive debugging logs to conversion completion and download trigger functions

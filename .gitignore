@@ -1,3 +1,4 @@
+venv
 .venv
 __pycache__
 
@@ -6,3 +7,4 @@ dev_mount_dir/
 invoke_test_volume/
 civit_model_loader/models/
 civit_model_loader/hash_cache.json
+

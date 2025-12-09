@@ -88,8 +88,8 @@ async def search_models(request: Request):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/api/models/{model_id}")
-async def get_model(model_id: int, request: Request):
+@app.get("/api/models/{civitai_model_id}")
+async def get_model(civitai_model_id: int, request: Request):
     """Get detailed information about a specific model"""
     try:
         # Try to get API token from query parameters or headers
@@ -101,10 +101,10 @@ async def get_model(model_id: int, request: Request):
                 api_token = auth_header[7:]
 
         client = CivitaiClient(api_token)
-        model_data = client.get_model(model_id)
+        model_data = client.get_model(civitai_model_id)
         return model_data
     except Exception as e:
-        logger.error(f"Error fetching model {model_id}: {e}")
+        logger.error(f"Error fetching model {civitai_model_id}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -286,7 +286,7 @@ async def check_file_existence(request: Request):
             exists = os.path.isfile(file_path)
 
             file_statuses.append(FileExistenceStatus(
-                model_id=file_info.model_id,
+                civitai_model_id=file_info.civitai_model_id,
                 version_id=file_info.version_id,
                 file_id=file_info.file_id,
                 filename=file_info.filename,
@@ -497,16 +497,13 @@ async def list_files(folder: str = Query(default="/workspace/output/images")):
                         try:
                             thumbnail_base64 = get_thumbnail_base64(file_path)
                             if thumbnail_base64:
-                                file_info.thumbnail = f"data:image/jpeg;base64,{
-                                    thumbnail_base64}"
+                                file_info.thumbnail = f"data:image/jpeg;base64,{thumbnail_base64}"
 
                             # Create URL for full-size image
                             from urllib.parse import quote
-                            file_info.image_url = f"/api/serve-image?file_path={
-                                quote(file_path)}"
+                            file_info.image_url = f"/api/serve-image?file_path={quote(file_path)}"
                         except Exception as e:
-                            logger.warning(f"Failed to generate thumbnail for {
-                                           file_path}: {e}")
+                            logger.warning(f"Failed to generate thumbnail for {file_path}: {e}")
                             # Continue without thumbnail
 
                     file_list.append(file_info)

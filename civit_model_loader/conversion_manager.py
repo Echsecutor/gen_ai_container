@@ -38,8 +38,7 @@ class ConversionManager:
         png_files = glob.glob(png_pattern)
 
         if not png_files:
-            raise ValueError(f"No PNG files found in directory: {
-                             request.directory}")
+            raise ValueError(f"No PNG files found in directory: {request.directory}")
 
         conversion_info = ConversionInfo(
             id=conversion_id,
@@ -65,8 +64,7 @@ class ConversionManager:
         try:
             conversion_info.status = ConversionStatus.PROCESSING
 
-            logger.info(f"Starting conversion for {
-                        conversion_id}: {len(png_files)} files")
+            logger.info(f"Starting conversion for {conversion_id}: {len(png_files)} files")
 
             # Create temporary directory for converted files
             temp_dir = tempfile.mkdtemp()
@@ -99,8 +97,7 @@ class ConversionManager:
                         else:
                             conversion_errors.append(
                                 f"{os.path.basename(png_file)}: {message}")
-                            logger.warning(f"Failed to convert {
-                                           png_file}: {message}")
+                            logger.warning(f"Failed to convert {png_file}: {message}")
 
                         # Yield control periodically
                         await asyncio.sleep(0.001)
@@ -120,16 +117,14 @@ class ConversionManager:
                     if conversion_errors:
                         error_summary = "; ".join(conversion_errors[:3])
                         if len(conversion_errors) > 3:
-                            error_summary += f" and {
-                                len(conversion_errors) - 3} more errors"
+                            error_summary += f"and {len(conversion_errors) - 3} more errors"
                         raise Exception(
                             f"No files could be converted. Errors: {error_summary}")
                     else:
                         raise Exception("No files could be converted")
 
                 # Create ZIP file
-                zip_filename = f"converted_images_{Path(conversion_info.directory).name}_{
-                    conversion_id[:8]}.zip"
+                zip_filename = f"converted_images_{Path(conversion_info.directory).name}_{conversion_id[:8]}.zip"
                 zip_path = os.path.join(temp_dir, zip_filename)
 
                 with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
@@ -139,10 +134,8 @@ class ConversionManager:
                     # Add a summary file if there were errors
                     if conversion_errors:
                         summary_content = "Conversion Summary\n" + "=" * 50 + "\n\n"
-                        summary_content += f"Successfully converted: {
-                            len(converted_files)} files\n"
-                        summary_content += f"Failed conversions: {
-                            len(conversion_errors)} files\n\n"
+                        summary_content += f"Successfully converted: {len(converted_files)} files\n"
+                        summary_content += f"Failed conversions: {len(conversion_errors)} files\n\n"
                         summary_content += "Errors:\n" + \
                             "\n".join(conversion_errors)
 
@@ -154,15 +147,13 @@ class ConversionManager:
 
                 # Update conversion info with download URL
                 conversion_info.status = ConversionStatus.COMPLETED
-                conversion_info.download_url = f"/api/download-conversion/{
-                    conversion_id}"
+                conversion_info.download_url = f"/api/download-conversion/{conversion_id}"
                 conversion_info.end_time = datetime.now().isoformat()
 
                 # Store the ZIP file path temporarily for download
                 conversion_info._zip_path = zip_path
 
-                logger.info(f"Conversion completed: {
-                            conversion_id} - {len(converted_files)} files converted")
+                logger.info(f"Conversion completed: {conversion_id} - {len(converted_files)} files converted")
 
             except Exception as e:
                 # Clean up temp directory on error
@@ -228,11 +219,9 @@ class ConversionManager:
                                 conversion_info._zip_path)
                             if os.path.exists(zip_dir):
                                 shutil.rmtree(zip_dir)
-                                logger.info(f"Cleaned up conversion files for {
-                                            conversion_id}")
+                                logger.info(f"Cleaned up conversion files for {conversion_id}")
                         except Exception as e:
-                            logger.warning(f"Failed to clean up files for {
-                                           conversion_id}: {e}")
+                            logger.warning(f"Failed to clean up files for {conversion_id}: {e}")
 
         for conversion_id in to_remove:
             del self.conversions[conversion_id]

@@ -497,3 +497,16 @@ app.js (main orchestrator)
 - **State Persistence**: Consolidated localStorage operations in state module
 - **API Client**: Robust retry logic and batch operations support
 - **UI Components**: Reusable progress bars, loading states, and notification system
+
+## Technical Fixes and Improvements
+
+### Pydantic Namespace Conflict Resolution (December 2024)
+
+- **Issue**: UserWarning about field "model_id" having conflict with protected namespace "model_" in Pydantic v2
+- **Solution**: Renamed all `model_id` fields to `civitai_model_id` across the entire codebase
+- **Affected Components**:
+  - **Pydantic Models**: `DownloadRequest`, `DownloadInfo`, `DownloadedModelFile`, `FileExistenceStatus` in `models.py`
+  - **Backend Code**: `main.py`, `download_manager.py`, `civitai_client.py` method signatures and API endpoints
+  - **Frontend Code**: `download.js` and `api.js` request/response handling
+- **Benefits**: Eliminates warning messages and ensures compatibility with Pydantic v2 field naming conventions
+- **Testing**: All 101 tests pass successfully with no namespace conflict warnings

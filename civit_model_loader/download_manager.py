@@ -43,7 +43,7 @@ class DownloadManager:
 
             download_info = DownloadInfo(
                 id=download_id,
-                model_id=request.model_id,
+                civitai_model_id=request.civitai_model_id,
                 version_id=request.version_id,
                 file_id=request.file_id,
                 filename=filename,
@@ -74,7 +74,7 @@ class DownloadManager:
 
             client = CivitaiClient(request.api_token)
             download_url = client.get_download_url(
-                request.model_id,
+                request.civitai_model_id,
                 request.version_id,
                 request.file_id
             )
@@ -83,8 +83,7 @@ class DownloadManager:
             file_path = self.models_dir / download_info.filename
             download_info.file_path = str(file_path)
 
-            logger.info(f"Starting download for {
-                        download_id}: {download_info.filename}")
+            logger.info(f"Starting download for {download_id}: {download_info.filename}")
 
             # Enhanced progress callback with timing and speed tracking
             start_time = time.time()
@@ -126,10 +125,8 @@ class DownloadManager:
                 if downloaded_size > 0 and downloaded_size % (1024 * 1024 * 10) == 0:
                     speed_mb = (download_info.download_speed or 0) / \
                         (1024 * 1024)
-                    eta_str = f"ETA: {
-                        download_info.eta_seconds}s" if download_info.eta_seconds else "ETA: unknown"
-                    logger.info(f"Download progress {download_id}: {downloaded_size / (1024*1024):.1f}MB / {effective_total / (
-                        1024*1024):.1f}MB ({download_info.progress:.1f}%) - Speed: {speed_mb:.1f}MB/s - {eta_str}")
+                    eta_str = f"ETA: {download_info.eta_seconds}s" if download_info.eta_seconds else "ETA: unknown"
+                    logger.info(f"Download progress {download_id}: {downloaded_size / (1024*1024):.1f}MB / {effective_total / (1024*1024):.1f}MB ({download_info.progress:.1f}%) - Speed: {speed_mb:.1f}MB/s - {eta_str}")
 
             # Download with async I/O - this won't block the event loop
             downloaded_size = await client.download_file_async(
@@ -151,8 +148,7 @@ class DownloadManager:
                 if total_time > 0:
                     download_info.download_speed = downloaded_size / total_time
 
-                logger.info(f"Download completed successfully: {
-                            download_info.filename} ({downloaded_size} bytes) in {total_time:.1f}s")
+                logger.info(f"Download completed successfully: {download_info.filename} ({downloaded_size} bytes) in {total_time:.1f}s")
             else:
                 raise Exception("Downloaded file is empty or missing")
 
@@ -165,11 +161,9 @@ class DownloadManager:
             if download_info.file_path and Path(download_info.file_path).exists():
                 try:
                     Path(download_info.file_path).unlink()
-                    logger.info(f"Cleaned up partial file: {
-                                download_info.file_path}")
+                    logger.info(f"Cleaned up partial file: {download_info.file_path}")
                 except Exception as cleanup_error:
-                    logger.warning(f"Failed to clean up partial file: {
-                                   cleanup_error}")
+                    logger.warning(f"Failed to clean up partial file: {cleanup_error}")
 
         except Exception as e:
             download_info.status = DownloadStatus.FAILED
@@ -183,11 +177,9 @@ class DownloadManager:
                     # Less than 90% complete
                     if file_size < (download_info.total_size or 0) * 0.9:
                         Path(download_info.file_path).unlink()
-                        logger.info(f"Cleaned up incomplete file: {
-                                    download_info.file_path}")
+                        logger.info(f"Cleaned up incomplete file: {download_info.file_path}")
                 except Exception as cleanup_error:
-                    logger.warning(f"Failed to clean up incomplete file: {
-                                   cleanup_error}")
+                    logger.warning(f"Failed to clean up incomplete file: {cleanup_error}")
 
         finally:
             # Remove from active downloads

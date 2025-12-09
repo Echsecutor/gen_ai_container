@@ -73,7 +73,7 @@ class SearchRequest(BaseModel):
 
 
 class DownloadRequest(BaseModel):
-    model_id: int
+    civitai_model_id: int
     version_id: int
     file_id: int
     api_token: str
@@ -81,7 +81,7 @@ class DownloadRequest(BaseModel):
 
 class DownloadInfo(BaseModel):
     id: str
-    model_id: int
+    civitai_model_id: int
     version_id: int
     file_id: int
     filename: str
@@ -103,7 +103,7 @@ class ConfigExport(BaseModel):
 
 
 class DownloadedModelFile(BaseModel):
-    model_id: int
+    civitai_model_id: int
     version_id: int
     file_id: int
     filename: str
@@ -114,7 +114,7 @@ class FileExistenceRequest(BaseModel):
 
 
 class FileExistenceStatus(BaseModel):
-    model_id: int
+    civitai_model_id: int
     version_id: int
     file_id: int
     filename: str

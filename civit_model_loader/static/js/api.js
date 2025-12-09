@@ -208,7 +208,7 @@ export const healthCheck = withErrorHandler(async () => {
 
 /**
  * Checks if downloaded model files actually exist on disk
- * @param {Array} files - Array of file objects with model_id, version_id, file_id, filename
+ * @param {Array} files - Array of file objects with civitai_model_id, version_id, file_id, filename
  * @returns {Promise<Object>} - Response with file existence status
  */
 export const checkFileExistence = withErrorHandler(async (files) => {

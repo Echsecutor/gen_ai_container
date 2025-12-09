@@ -54,7 +54,7 @@ class DownloadManager {
   ) {
     try {
       const downloadRequest = {
-        model_id: modelId,
+        civitai_model_id: modelId,
         version_id: versionId,
         file_id: fileId,
       };
@@ -265,7 +265,7 @@ class DownloadManager {
 
       // Prepare file data for existence check
       const files = validModels.map((model) => ({
-        model_id: model.id,
+        civitai_model_id: model.id,
         version_id: model.versionId,
         file_id: model.fileId,
         filename: model.filename,
@@ -287,7 +287,7 @@ class DownloadManager {
       const fileStatusMap = new Map();
 
       response.files.forEach((fileStatus) => {
-        const key = `${fileStatus.model_id}-${fileStatus.version_id}-${fileStatus.file_id}`;
+        const key = `${fileStatus.civitai_model_id}-${fileStatus.version_id}-${fileStatus.file_id}`;
         fileStatusMap.set(key, fileStatus);
       });
 

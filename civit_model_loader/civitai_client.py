@@ -56,14 +56,14 @@ class CivitaiClient:
             logger.error(f"Error searching models: {e}")
             raise
 
-    def get_model(self, model_id: int) -> Dict[str, Any]:
+    def get_model(self, civitai_model_id: int) -> Dict[str, Any]:
         """Get detailed information about a specific model"""
         try:
-            response = self.session.get(f"{self.BASE_URL}/models/{model_id}")
+            response = self.session.get(f"{self.BASE_URL}/models/{civitai_model_id}")
             response.raise_for_status()
             return response.json()
         except requests.RequestException as e:
-            logger.error(f"Error fetching model {model_id}: {e}")
+            logger.error(f"Error fetching model {civitai_model_id}: {e}")
             raise
 
     def get_model_version(self, version_id: int) -> Dict[str, Any]:
@@ -77,7 +77,7 @@ class CivitaiClient:
             logger.error(f"Error fetching model version {version_id}: {e}")
             raise
 
-    def get_download_url(self, model_id: int, version_id: int, file_id: int) -> str:
+    def get_download_url(self, civitai_model_id: int, version_id: int, file_id: int) -> str:
         """Get the download URL for a specific model file"""
         # The download URL is typically provided in the model version details
         # For direct download, we use the file's downloadUrl from the model data
@@ -126,8 +126,7 @@ class CivitaiClient:
                     downloaded_size = 0
                     chunk_size = 32768  # Increased chunk size for better performance
 
-                    logger.info(f"Starting download: {
-                                file_path}, Total size: {total_size} bytes")
+                    logger.info(f"Starting download: {file_path}, Total size: {total_size} bytes")
 
                     # Use aiofiles for async file writing
                     async with aiofiles.open(file_path, 'wb') as f:
@@ -148,8 +147,7 @@ class CivitaiClient:
                             if downloaded_size % (chunk_size * 5) == 0:  # Every ~160KB
                                 await asyncio.sleep(0.001)
 
-                    logger.info(f"Download completed: {file_path}, Downloaded: {
-                                downloaded_size} bytes")
+                    logger.info(f"Download completed: {file_path}, Downloaded: {downloaded_size} bytes")
                     return downloaded_size
 
         except asyncio.TimeoutError as e:
@@ -157,10 +155,8 @@ class CivitaiClient:
             raise Exception(
                 f"Download timeout: The download took too long to complete")
         except aiohttp.ClientError as e:
-            logger.error(f"HTTP error downloading file from {
-                         download_url}: {e}")
+            logger.error(f"HTTP error downloading file from {download_url}: {e}")
             raise Exception(f"Download failed: {str(e)}")
         except Exception as e:
-            logger.error(f"Unexpected error downloading file from {
-                         download_url}: {e}")
+            logger.error(f"Unexpected error downloading file from {download_url}: {e}")
             raise
