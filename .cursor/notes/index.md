@@ -25,6 +25,10 @@ This is a Docker container project for AI/ML tools, specifically focused on Invo
 
 - [`development_tools.md`](development_tools.md) - Development tools, autopep8 safety configuration, f-string fixing, and troubleshooting guides
 
+### Utility Scripts
+
+- [`sort_script.md`](sort_script.md) - Balanced binary tree algorithm for sorting generated images by metadata keywords
+
 ## Key Components
 
 - **Docker Configurations**: `invoke_ai.Dockerfile`, `comfy.Dockerfile` for containerized AI tools

@@ -2,7 +2,11 @@
 
 ## WIP
 
-
+- Optimized `scripts/sort_generated_pics` auto-sort algorithm
+  - Changed from greedy (first valid keyword) to balanced binary tree approach
+  - Now selects keyword that creates most balanced 50-50 split
+  - Results in shallower, more efficient folder hierarchy (log₂(n) depth)
+  - Symmetric handling of both branches for consistent tree structure
 - Forked comfy UI container
   - Added ffmpeg + libs for video generation
 - Moved Invoke to subfolder

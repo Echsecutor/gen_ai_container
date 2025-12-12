@@ -102,36 +102,63 @@ find_discriminating_keyword() {
         fi
     done | sort | uniq -c | sort -nr >"$keyword_counts"
 
-    # Find first keyword that creates a meaningful split (not all files, not too few)
+    # Find keyword that creates the most balanced split (closest to 50-50)
     local discriminating_keyword=""
     local total_files=${#files_array[@]}
+    local best_balance_score=999999
+    local target_count=$((total_files / 2))
 
     while read -r count keyword; do
-        if [ "$count" -ge 3 ] && [ "$count" -le 20 ] && ! is_common_word "$keyword"; then
-            local folder_name
-            folder_name=$(echo "$keyword" | tr ' ' '_' | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9_]//g')
+        # Skip common words
+        if is_common_word "$keyword"; then
+            continue
+        fi
 
-            # Skip if folder already exists or keyword was already used (prevents infinite loops)
-            if [ ! -d "$folder_name" ] && ! grep -q "^$keyword$" "$USED_KEYWORDS_FILE" 2>/dev/null; then
-                # Ensure meaningful split: keyword should match 3-20 files AND leave at least 3 files behind
-                # (unless we have a small total where we can't achieve both)
-                local remaining_count=$((total_files - count))
+        local folder_name
+        folder_name=$(echo "$keyword" | tr ' ' '_' | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9_]//g')
 
-                if [ "$total_files" -le 6 ]; then
-                    # For small sets (≤6), any valid split is acceptable
-                    discriminating_keyword="$keyword"
-                    echo "$keyword" >>"$USED_KEYWORDS_FILE"
-                    break
-                elif [ "$remaining_count" -ge 3 ] || [ "$remaining_count" -eq 0 ]; then
-                    # Good split: leaves at least 3 files behind, or takes all remaining files
-                    discriminating_keyword="$keyword"
-                    echo "$keyword" >>"$USED_KEYWORDS_FILE"
-                    break
-                fi
-                # Otherwise skip this keyword as it would create a poor split
+        # Skip if folder already exists or keyword was already used (prevents infinite loops)
+        if [ -d "$folder_name" ] || grep -q "^$keyword$" "$USED_KEYWORDS_FILE" 2>/dev/null; then
+            continue
+        fi
+
+        local remaining_count=$((total_files - count))
+
+        # For small sets (≤6), accept any valid split
+        if [ "$total_files" -le 6 ]; then
+            if [ "$count" -ge 3 ]; then
+                discriminating_keyword="$keyword"
+                echo "$keyword" >>"$USED_KEYWORDS_FILE"
+                break
             fi
+            continue
+        fi
+
+        # For larger sets, ensure both sides have at least 3 files
+        if [ "$count" -lt 3 ] || [ "$remaining_count" -lt 3 ]; then
+            continue
+        fi
+
+        # Calculate balance score: how far this split is from 50-50
+        # Lower score = better balance
+        local balance_score
+        if [ "$count" -gt "$target_count" ]; then
+            balance_score=$((count - target_count))
+        else
+            balance_score=$((target_count - count))
+        fi
+
+        # Update best keyword if this split is more balanced
+        if [ "$balance_score" -lt "$best_balance_score" ]; then
+            best_balance_score=$balance_score
+            discriminating_keyword="$keyword"
         fi
     done <"$keyword_counts"
+
+    # Mark the chosen keyword as used
+    if [ -n "$discriminating_keyword" ]; then
+        echo "$discriminating_keyword" >>"$USED_KEYWORDS_FILE"
+    fi
 
     rm -rf "$temp_dir"
     echo "$discriminating_keyword"
@@ -244,16 +271,26 @@ recursive_sort() {
         echo "  WARNING: Very few files moved ($moved_count) - poor split"
     fi
 
-    # Recursively process the matching files if they're still too many
-    if [ ${#matching_files[@]} -gt 20 ]; then
-        echo "  Recursively processing $folder_name (${#matching_files[@]} files)..."
+    # Recursively process both halves if they need further splitting (>20 files)
+    # This creates a balanced binary tree structure
+    
+    local matching_count=${#matching_files[@]}
+    local remaining_count=${#remaining_files[@]}
+    
+    # Recurse into matching files if they need further sorting
+    if [ "$matching_count" -gt 20 ] || ([ "$matching_count" -gt 0 ] && [ "$matching_count" -lt 3 ]); then
+        echo "  Recursively processing $folder_name ($matching_count files)..."
         (cd "$folder_name" && RECURSION_DEPTH=$((depth + 1)) recursive_sort "${matching_files[@]##*/}")
+    elif [ "$matching_count" -ge 3 ] && [ "$matching_count" -le 20 ]; then
+        echo "  Folder '$folder_name' has optimal size ($matching_count files), done."
     fi
 
-    # Recursively process remaining files if there are any
-    if [ ${#remaining_files[@]} -gt 0 ]; then
-        echo "  Recursively processing remaining ${#remaining_files[@]} files..."
+    # Recurse into remaining files if they need further sorting
+    if [ "$remaining_count" -gt 20 ] || ([ "$remaining_count" -gt 0 ] && [ "$remaining_count" -lt 3 ]); then
+        echo "  Recursively processing remaining $remaining_count files..."
         RECURSION_DEPTH=$((depth + 1)) recursive_sort "${remaining_files[@]}"
+    elif [ "$remaining_count" -ge 3 ] && [ "$remaining_count" -le 20 ]; then
+        echo "  Remaining files have optimal size ($remaining_count files), done."
     fi
 }
 
