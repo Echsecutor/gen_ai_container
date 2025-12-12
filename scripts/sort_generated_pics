@@ -35,13 +35,16 @@ extract_positive_prompt() {
     local file="$1"
 
     # Extract the parameters section from identify output
-    local identify_output=$(identify -verbose "$file")
+    local identify_output
+    identify_output=$(identify -verbose "$file")
 
     # Extract text between "parameters: " and "Negative prompt:"
-    local parameters_section=$(echo "$identify_output" | sed -n '/parameters: /,/Negative prompt:/p' | head -n -1)
+    local parameters_section
+    parameters_section=$(echo "$identify_output" | sed -n '/parameters: /,/Negative prompt:/p' | head -n -1)
 
     # Remove the "parameters: " prefix from the first line
-    local prompt=$(echo "$parameters_section" | sed '1s/^[[:space:]]*parameters: //')
+    local prompt
+    prompt=$(echo "$parameters_section" | sed '1s/^[[:space:]]*parameters: //')
 
     # Remove LoRA references like <lora:...> and trailing metadata
     prompt=$(echo "$prompt" | sed -E 's/<lora:[^>]*>//g')
@@ -64,7 +67,7 @@ search_files() {
     mkdir -p "$SEARCH"
 
     for file in *.png; do
-        if identify -verbose $file | grep -q "$SEARCH"; then
+        if identify -verbose "$file" | grep -q "$SEARCH"; then
             mv -v "$file" "$SEARCH/"
         fi
     done
@@ -84,13 +87,15 @@ is_common_word() {
 
 find_discriminating_keyword() {
     local files_array=("$@")
-    local temp_dir=$(mktemp -d)
+    local temp_dir
+    temp_dir=$(mktemp -d)
     local keyword_counts="$temp_dir/keyword_counts.txt"
 
     # Extract all keywords from all files and count them
     for file in "${files_array[@]}"; do
         if [ -f "$file" ]; then
-            local prompt=$(extract_positive_prompt "$file")
+            local prompt
+            prompt=$(extract_positive_prompt "$file")
             if [ -n "$prompt" ]; then
                 extract_keywords_from_prompt "$prompt"
             fi
@@ -101,9 +106,10 @@ find_discriminating_keyword() {
     local discriminating_keyword=""
     local total_files=${#files_array[@]}
 
-    while read count keyword; do
+    while read -r count keyword; do
         if [ "$count" -ge 3 ] && [ "$count" -le 20 ] && ! is_common_word "$keyword"; then
-            local folder_name=$(echo "$keyword" | tr ' ' '_' | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9_]//g')
+            local folder_name
+            folder_name=$(echo "$keyword" | tr ' ' '_' | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9_]//g')
 
             # Skip if folder already exists or keyword was already used (prevents infinite loops)
             if [ ! -d "$folder_name" ] && ! grep -q "^$keyword$" "$USED_KEYWORDS_FILE" 2>/dev/null; then
@@ -111,12 +117,12 @@ find_discriminating_keyword() {
                 # (unless we have a small total where we can't achieve both)
                 local remaining_count=$((total_files - count))
 
-                if [ $total_files -le 6 ]; then
+                if [ "$total_files" -le 6 ]; then
                     # For small sets (≤6), any valid split is acceptable
                     discriminating_keyword="$keyword"
                     echo "$keyword" >>"$USED_KEYWORDS_FILE"
                     break
-                elif [ $remaining_count -ge 3 ] || [ $remaining_count -eq 0 ]; then
+                elif [ "$remaining_count" -ge 3 ] || [ "$remaining_count" -eq 0 ]; then
                     # Good split: leaves at least 3 files behind, or takes all remaining files
                     discriminating_keyword="$keyword"
                     echo "$keyword" >>"$USED_KEYWORDS_FILE"
@@ -139,30 +145,31 @@ recursive_sort() {
     echo "Processing batch of $file_count files... (depth: $depth)"
 
     # Safety: prevent infinite recursion
-    if [ $depth -gt 10 ]; then
+    if [ "$depth" -gt 10 ]; then
         echo "  Maximum recursion depth reached, stopping."
         return 0
     fi
 
     # Base case: if we have 3-20 files, we're done with this batch
-    if [ $file_count -ge 3 ] && [ $file_count -le 20 ]; then
+    if [ "$file_count" -ge 3 ] && [ "$file_count" -le 20 ]; then
         echo "  Batch size ($file_count) is optimal, no further sorting needed."
         return 0
     fi
 
     # If less than 3 files, leave them unsorted
-    if [ $file_count -lt 3 ]; then
+    if [ "$file_count" -lt 3 ]; then
         echo "  Batch too small ($file_count files), leaving unsorted."
         return 0
     fi
 
     # Find a discriminating keyword for this batch
-    local keyword=$(find_discriminating_keyword "${files_array[@]}")
+    local keyword
+    keyword=$(find_discriminating_keyword "${files_array[@]}")
 
     if [ -z "$keyword" ]; then
         echo "  No discriminating keyword found for this batch."
         # If we have more than 20 files and can't find a good keyword, try a different approach
-        if [ $file_count -gt 20 ]; then
+        if [ "$file_count" -gt 20 ]; then
             echo "  Batch too large ($file_count files) but no good keywords - trying alphabetical split..."
             # Split alphabetically by filename as fallback
             local mid_point=$((file_count / 2))
@@ -198,7 +205,8 @@ recursive_sort() {
     echo "  Found discriminating keyword: '$keyword'"
 
     # Create folder for this keyword
-    local folder_name=$(echo "$keyword" | tr ' ' '_' | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9_]//g')
+    local folder_name
+    folder_name=$(echo "$keyword" | tr ' ' '_' | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9_]//g')
     mkdir -p "$folder_name"
 
     # Separate files into matching and non-matching
@@ -207,7 +215,8 @@ recursive_sort() {
 
     for file in "${files_array[@]}"; do
         if [ -f "$file" ]; then
-            local prompt=$(extract_positive_prompt "$file")
+            local prompt
+            prompt=$(extract_positive_prompt "$file")
             if [ -n "$prompt" ] && echo "$prompt" | grep -i -q "$keyword"; then
                 matching_files+=("$file")
             else
@@ -229,9 +238,9 @@ recursive_sort() {
     echo "  Created folder '$folder_name' with $moved_count files (${#remaining_files[@]} remaining)"
 
     # Validate that we created a meaningful split
-    if [ $moved_count -eq $file_count ]; then
+    if [ "$moved_count" -eq "$file_count" ]; then
         echo "  WARNING: All files moved to one folder - no meaningful split achieved"
-    elif [ $moved_count -lt 3 ] && [ $file_count -gt 6 ]; then
+    elif [ "$moved_count" -lt 3 ] && [ "$file_count" -gt 6 ]; then
         echo "  WARNING: Very few files moved ($moved_count) - poor split"
     fi
 
@@ -268,7 +277,8 @@ auto_sort() {
 
     # Initialize recursion depth and used keywords tracking
     export RECURSION_DEPTH=0
-    export USED_KEYWORDS_FILE=$(mktemp)
+    export USED_KEYWORDS_FILE
+    USED_KEYWORDS_FILE=$(mktemp)
 
     # Start recursive sorting
     recursive_sort "${all_files[@]}"
@@ -282,15 +292,15 @@ auto_sort() {
 sort_by_model() {
     MODELS=()
     for file in *.png; do
-        MODEL=$(identify -verbose $file | grep -o "Model:[^,]*" | grep -o " .*" | grep -o "\S*")
+        MODEL=$(identify -verbose "$file" | grep -o "Model:[^,]*" | grep -o " .*" | grep -o "\S*")
         if [ -z "$MODEL" ]; then
             echo "No model found for $file"
             continue
         fi
-        MODELS+=($MODEL)
+        MODELS+=("$MODEL")
     done
     # Remove duplicates from MODELS array
-    MODELS=($(printf "%s\n" "${MODELS[@]}" | sort -u))
+    mapfile -t MODELS < <(printf "%s\n" "${MODELS[@]}" | sort -u)
     echo "MODELS:" "${MODELS[@]}"
 
     for MODEL in "${MODELS[@]}"; do
