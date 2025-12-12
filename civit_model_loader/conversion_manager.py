@@ -5,6 +5,7 @@ import tempfile
 import zipfile
 import glob
 import shutil
+import subprocess
 from typing import Dict, Optional
 from pathlib import Path
 import logging
@@ -52,19 +53,19 @@ class ConversionManager:
 
         # Start conversion in background
         task = asyncio.create_task(
-            self._convert_images(conversion_id, png_files))
+            self._convert_images(conversion_id, png_files, request.auto_sort))
         self.active_conversions[conversion_id] = task
 
         return conversion_id
 
-    async def _convert_images(self, conversion_id: str, png_files: list):
+    async def _convert_images(self, conversion_id: str, png_files: list, auto_sort: bool = True):
         """Convert images asynchronously"""
         conversion_info = self.conversions[conversion_id]
 
         try:
             conversion_info.status = ConversionStatus.PROCESSING
 
-            logger.info(f"Starting conversion for {conversion_id}: {len(png_files)} files")
+            logger.info(f"Starting conversion for {conversion_id}: {len(png_files)} files (auto_sort={auto_sort})")
 
             # Create temporary directory for converted files
             temp_dir = tempfile.mkdtemp()
@@ -123,13 +124,34 @@ class ConversionManager:
                     else:
                         raise Exception("No files could be converted")
 
+                # Auto-sort converted images if requested
+                if auto_sort and converted_files:
+                    logger.info(f"Auto-sorting converted images for {conversion_id}")
+                    try:
+                        await self._sort_images(temp_dir)
+                        logger.info(f"Auto-sort completed for {conversion_id}")
+                    except Exception as sort_error:
+                        logger.warning(f"Auto-sort failed for {conversion_id}: {sort_error}")
+                        # Continue with ZIP creation even if sorting fails
+
                 # Create ZIP file
                 zip_filename = f"converted_images_{Path(conversion_info.directory).name}_{conversion_id[:8]}.zip"
                 zip_path = os.path.join(temp_dir, zip_filename)
 
                 with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-                    for file_path, arc_name in converted_files:
-                        zipf.write(file_path, arc_name)
+                    # If auto-sort was enabled, walk the directory tree to include sorted structure
+                    if auto_sort:
+                        for root, dirs, files in os.walk(temp_dir):
+                            for file in files:
+                                if file != zip_filename:  # Don't include the zip file itself
+                                    file_path = os.path.join(root, file)
+                                    # Create archive name with relative path from temp_dir
+                                    arc_name = os.path.relpath(file_path, temp_dir)
+                                    zipf.write(file_path, arc_name)
+                    else:
+                        # Original behavior: just add converted files at root level
+                        for file_path, arc_name in converted_files:
+                            zipf.write(file_path, arc_name)
 
                     # Add a summary file if there were errors
                     if conversion_errors:
@@ -177,6 +199,31 @@ class ConversionManager:
             # Remove from active conversions
             if conversion_id in self.active_conversions:
                 del self.active_conversions[conversion_id]
+
+    async def _sort_images(self, directory: str):
+        """Sort images in directory using the sort_generated_pics script"""
+        # Get path to the sort script (should be in same directory as this file)
+        script_path = os.path.join(os.path.dirname(__file__), 'sort_generated_pics')
+        
+        if not os.path.exists(script_path):
+            raise FileNotFoundError(f"Sort script not found at {script_path}")
+        
+        # Run the sort script with auto-sort flag in the temp directory
+        process = await asyncio.create_subprocess_exec(
+            script_path,
+            '-a',  # auto-sort flag
+            cwd=directory,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        
+        stdout, stderr = await process.communicate()
+        
+        if process.returncode != 0:
+            stderr_text = stderr.decode() if stderr else "Unknown error"
+            raise Exception(f"Sort script failed with return code {process.returncode}: {stderr_text}")
+        
+        logger.info(f"Sort script output: {stdout.decode()}")
 
     def get_conversion_status(self, conversion_id: str) -> Optional[ConversionInfo]:
         """Get the status of a specific conversion"""

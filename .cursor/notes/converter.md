@@ -161,6 +161,26 @@ success, message = convert_image_metadata("input.png", "output.png", config, cac
 - **Comprehensive Testing**: Validated against real test images
 - **Cloud Environment Support**: Uses configurable cache directory with automatic `/workspace` fallback for Docker containers
 
+## Auto-Sort Integration
+
+The converter is integrated with the `sort_generated_pics` script for automatic image organization:
+
+### ConversionManager Features
+
+- **Auto-Sort Parameter**: `ConversionRequest` model includes `auto_sort: bool = True`
+- **Automatic Execution**: Calls `sort_generated_pics -a` on converted images before ZIP creation
+- **Async Processing**: Sort runs asynchronously without blocking conversion
+- **Error Handling**: Sort failures are logged but don't prevent conversion from completing
+- **ZIP Structure**: Sorted folder hierarchy is preserved in downloaded ZIP file
+
+### UI Control
+
+- **Checkbox**: "Auto-sort images by prompt keywords before zipping" in conversion section
+- **Default State**: Enabled by default
+- **User Control**: Can be disabled for faster processing or when sorting is not needed
+
+See `sort_script.md` for details on the balanced binary tree sorting algorithm.
+
 ## Implementation Notes
 
 - **Sampler Mapping**: Contains lookup table for InvokeAI to A1111 sampler name conversion

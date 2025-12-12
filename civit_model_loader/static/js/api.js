@@ -248,11 +248,13 @@ export const downloadConvertedImages = withErrorHandler(async (directory) => {
 /**
  * Start image conversion asynchronously
  * @param {string} directory - Directory path to scan for PNG images
+ * @param {boolean} autoSort - Whether to auto-sort images before zipping (default: true)
  * @returns {Promise<Object>} - Conversion response with conversion_id
  */
-export const startImageConversion = withErrorHandler(async (directory) => {
+export const startImageConversion = withErrorHandler(async (directory, autoSort = true) => {
   return await apiClient.post("/api/start-conversion", {
     directory: directory,
+    auto_sort: autoSort,
   });
 }, "Failed to start image conversion");
 

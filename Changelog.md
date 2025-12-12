@@ -2,6 +2,11 @@
 
 ## WIP
 
+- Integrated auto-sort functionality into civit_model_loader
+  - Moved `scripts/sort_generated_pics` into `civit_model_loader/` for Docker image availability
+  - Added auto-sort option to conversion manager with UI checkbox control
+  - Enables automatic organization of converted images by prompt keywords
+  - Auto-sort is enabled by default but can be disabled via UI
 - Optimized `scripts/sort_generated_pics` auto-sort algorithm
   - Changed from greedy (first valid keyword) to balanced binary tree approach
   - Now selects keyword that creates most balanced 50-50 split

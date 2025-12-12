@@ -1,7 +1,8 @@
 # Sort Generated Pictures Script
 
-## Location
-`scripts/sort_generated_pics`
+## Locations
+- Original: `scripts/sort_generated_pics` (for manual use)
+- Integrated: `civit_model_loader/sort_generated_pics` (for Docker container use)
 
 ## Purpose
 Bash script to automatically sort AI-generated PNG images into folders based on metadata (prompts, keywords, models).
@@ -90,6 +91,18 @@ Prompts are cleaned:
 ./scripts/sort_generated_pics -m
 ```
 
+## Integration with Civit Model Loader
+
+The script is now integrated into the civit_model_loader image conversion workflow:
+
+- **UI Control**: Checkbox in conversion section (default enabled)
+- **API Parameter**: `auto_sort` boolean in `ConversionRequest` (default: true)
+- **Execution**: Called automatically by `ConversionManager` before ZIP creation
+- **Error Handling**: Sort failures are logged but don't prevent conversion completion
+- **ZIP Structure**: Sorted folder hierarchy is preserved in downloaded ZIP file
+
+See `converter.md` for conversion manager integration details.
+
 ## Technical Notes
 
 - Requires: bash, ImageMagick (`identify`), standard Unix tools
@@ -97,3 +110,4 @@ Prompts are cleaned:
 - Creates nested folder structure in-place
 - Safe recursion limit: 10 levels maximum
 - Keyword tracking prevents infinite loops
+- Runs asynchronously in conversion workflow without blocking

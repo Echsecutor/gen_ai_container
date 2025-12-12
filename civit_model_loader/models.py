@@ -139,6 +139,7 @@ class ListFilesResponse(BaseModel):
 
 class ConversionRequest(BaseModel):
     directory: str
+    auto_sort: bool = True
 
 
 class ConversionStatus(str, Enum):

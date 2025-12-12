@@ -2,6 +2,16 @@
 
 ## WIP
 
+- Added auto-sort functionality for image conversion with UI toggle
+  - Moved `sort_generated_pics` script into civit_model_loader for availability in Docker images
+  - Added `auto_sort` parameter to `ConversionRequest` model (default: true)
+  - Integrated sorting script execution in `ConversionManager` before ZIP creation
+  - Auto-sort uses balanced binary tree algorithm to organize images by prompt keywords
+  - Added checkbox UI control in conversion section (default enabled)
+  - Updated frontend JavaScript to send auto_sort parameter with conversion requests
+  - ZIP files now preserve sorted folder structure when auto-sort is enabled
+  - Sort failures are logged but don't prevent conversion from completing
+
 - Fixed Pydantic namespace conflict warning by renaming `model_id` field to `civitai_model_id`
 
   - Updated all Pydantic models (`DownloadRequest`, `DownloadInfo`, `DownloadedModelFile`, `FileExistenceStatus`) to use `civitai_model_id` instead of `model_id`

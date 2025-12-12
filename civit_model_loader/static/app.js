@@ -179,6 +179,7 @@ class App {
    */
   async downloadConvertedImages() {
     const directoryInput = document.getElementById("imageDirectory");
+    const autoSortCheckbox = document.getElementById("autoSortCheckbox");
     const statusDiv = document.getElementById("conversionStatus");
 
     if (!directoryInput) {
@@ -191,6 +192,8 @@ class App {
       showToast("Please enter a directory path", "error");
       return;
     }
+
+    const autoSort = autoSortCheckbox ? autoSortCheckbox.checked : true;
 
     let conversionId = null;
     let pollingInterval = null;
@@ -206,7 +209,7 @@ class App {
       showToast("Starting image conversion...", "info");
 
       // Start the conversion
-      const result = await startImageConversion(directory);
+      const result = await startImageConversion(directory, autoSort);
       conversionId = result.conversion_id;
 
       showToast("Conversion started! Tracking progress...", "info");
