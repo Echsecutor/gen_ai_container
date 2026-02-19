@@ -106,6 +106,7 @@ See `converter.md` for conversion manager integration details.
 ## Technical Notes
 
 - Requires: bash, ImageMagick (`identify`), standard Unix tools
+- `ensure_identify_available`: called from `main` after arg parsing; auto-installs ImageMagick via apt-get, dnf, pacman, or brew if `identify` is missing; exits with error if no supported package manager is found
 - Operates on PNG files with embedded metadata
 - Creates nested folder structure in-place
 - Safe recursion limit: 10 levels maximum

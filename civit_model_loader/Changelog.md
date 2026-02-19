@@ -2,6 +2,8 @@
 
 ## WIP
 
+- `sort_generated_pics`: added `ensure_identify_available` function to auto-install ImageMagick if `identify` is not found; supports apt-get, dnf, pacman, and brew
+
 - Added auto-sort functionality for image conversion with UI toggle
   - Moved `sort_generated_pics` script into civit_model_loader for availability in Docker images
   - Added `auto_sort` parameter to `ConversionRequest` model (default: true)
