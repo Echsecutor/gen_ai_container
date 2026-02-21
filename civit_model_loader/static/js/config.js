@@ -3,7 +3,11 @@
  * Handles import/export of settings and preferences
  */
 
-import { exportConfiguration, importConfiguration } from "./state.js";
+import {
+  exportConfiguration,
+  importConfiguration,
+  markClean,
+} from "./state.js";
 import { showToast } from "./ui.js";
 
 /**
@@ -60,6 +64,7 @@ class ConfigManager {
       document.body.removeChild(a);
 
       URL.revokeObjectURL(url);
+      markClean();
       showToast("Configuration exported successfully", "success");
     } catch (error) {
       console.error("Export error:", error);

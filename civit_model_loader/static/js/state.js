@@ -17,6 +17,7 @@ class AppState {
     this.downloadedModels = [];
     this.pollInterval = null;
     this.lastSearchMetadata = null;
+    this.unsavedChanges = false;
 
     // Storage keys
     this.STORAGE_KEYS = {
@@ -25,8 +26,42 @@ class AppState {
       NSFW_PREFERENCE: "civitai_nsfw_preference",
     };
 
+    // Stable reference for beforeunload handler so it can be removed later
+    this._beforeUnloadHandler = (event) => {
+      event.preventDefault();
+      event.returnValue = true; // Legacy support (Chrome/Edge < 119)
+    };
+
     // Initialize
     this.loadStoredData();
+  }
+
+  /**
+   * Marks the configuration as having unsaved changes.
+   * Registers the beforeunload warning if not already registered.
+   */
+  markDirty() {
+    if (!this.unsavedChanges) {
+      this.unsavedChanges = true;
+      window.addEventListener("beforeunload", this._beforeUnloadHandler);
+    }
+  }
+
+  /**
+   * Marks the configuration as saved (no unsaved changes).
+   * Removes the beforeunload warning.
+   */
+  markClean() {
+    this.unsavedChanges = false;
+    window.removeEventListener("beforeunload", this._beforeUnloadHandler);
+  }
+
+  /**
+   * Returns whether there are unsaved changes.
+   * @returns {boolean}
+   */
+  hasUnsavedChanges() {
+    return this.unsavedChanges;
   }
 
   /**
@@ -74,6 +109,7 @@ class AppState {
       showToast("API token removed", "warning");
       tokenUI.showTokenInput();
     }
+    this.markDirty();
   }
 
   /**
@@ -106,6 +142,7 @@ class AppState {
       this.STORAGE_KEYS.NSFW_PREFERENCE,
       JSON.stringify(preference)
     );
+    this.markDirty();
   }
 
   /**
@@ -172,6 +209,7 @@ class AppState {
     }
 
     this.saveDownloadedModels();
+    this.markDirty();
   }
 
   /**
@@ -200,6 +238,7 @@ class AppState {
         )
     );
     this.saveDownloadedModels();
+    this.markDirty();
   }
 
   /**
@@ -287,6 +326,8 @@ class AppState {
       }
       this.saveNsfwPreference(config.nsfw_preference);
     }
+
+    this.markDirty();
   }
 
   /**
@@ -304,6 +345,7 @@ class AppState {
     this.lastSearchMetadata = null;
 
     showToast("All data cleared", "warning");
+    this.markDirty();
   }
 
   /**
@@ -383,4 +425,16 @@ export function exportConfiguration() {
 
 export function importConfiguration(config) {
   return appState.importConfiguration(config);
+}
+
+export function markDirty() {
+  return appState.markDirty();
+}
+
+export function markClean() {
+  return appState.markClean();
+}
+
+export function hasUnsavedChanges() {
+  return appState.hasUnsavedChanges();
 }

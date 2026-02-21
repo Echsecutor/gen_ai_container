@@ -2,6 +2,13 @@
 
 ## WIP
 
+- Added unsaved-changes browser warning: navigating away or closing the tab now shows a browser-native "Leave site?" dialog if the configuration has been modified since the last config JSON download
+  - New `markDirty()` / `markClean()` / `hasUnsavedChanges()` methods on `AppState` in `state.js`
+  - Dirty state is set on: API token save/clear, NSFW preference change, model add/remove, config import, and data reset
+  - Clean state is set when the config JSON is successfully downloaded via the Export button
+  - Uses the standard `beforeunload` event with `event.preventDefault()` (and `event.returnValue` for legacy browser support)
+  - The handler is added/removed dynamically — no overhead when there is nothing to warn about
+
 - `sort_generated_pics`: added `ensure_identify_available` function to auto-install ImageMagick if `identify` is not found; supports apt-get, dnf, pacman, and brew
 
 - Added auto-sort functionality for image conversion with UI toggle

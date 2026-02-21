@@ -75,6 +75,9 @@ Complete frontend + backend implementation for downloading AI models from Civita
 - Re-download previously downloaded models
 - Export/import configuration as JSON
 - NSFW preference storage and restoration across sessions
+- **Unsaved-changes warning**: browser shows native "Leave site?" dialog when closing/navigating away if config has been changed since last JSON export
+  - Implemented via `beforeunload` event in `state.js` (`markDirty` / `markClean` on `AppState`)
+  - Dirty: API token change, NSFW change, model add/remove, import, reset; Clean: successful export
 - **File Existence Verification**: Backend checks if downloaded model files actually exist on disk
   - Real-time file existence status displayed in Downloaded Models section
   - Visual indicators: ✅ for existing files, ❌ for missing files
