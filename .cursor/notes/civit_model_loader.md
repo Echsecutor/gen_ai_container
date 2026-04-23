@@ -440,6 +440,13 @@ docker-compose up --build
   - Removes model from localStorage but doesn't delete actual file from disk
   - Provides user feedback with toast notifications
 
+### Network Resilience
+
+- **`ApiClient.request()`** retries transient network errors (`TypeError` / `Failed to fetch`) up to 2 times with linear backoff (1s, 2s)
+- **`withErrorHandler`** rate-limits toast notifications per error message (10s cooldown) to prevent spam during outages
+- **Conversion polling** tracks consecutive failures; only stops after 10 consecutive errors instead of the first one
+- **Download queue polling** continues through brief network blips transparently (errors caught in `loadDownloadQueue`)
+
 ### Performance and Threading Fixes
 
 - **UI Responsiveness During Downloads**: Fixed blocking UI during active downloads

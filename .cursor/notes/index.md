@@ -21,6 +21,10 @@ This is a Docker container project for AI/ML tools, specifically focused on Invo
 - [`thumbnail_system.md`](thumbnail_system.md) - Image thumbnail generation with intelligent caching for file listings and interactive gallery UI
 - [`script_improvements.md`](script_improvements.md) - Process management and PID tracking enhancements
 
+### AI Video Generation
+
+- [`video_generation_models.md`](video_generation_models.md) - Open-weight video generation models runnable locally (Wan 2.2, LTX-2, HunyuanVideo, CogVideoX), VRAM requirements, ComfyUI integration status, and comparison with closed models (Seedance 2.0, Kling, Veo 3, Sora 2)
+
 ### Development and Troubleshooting
 
 - [`development_tools.md`](development_tools.md) - Development tools, autopep8 safety configuration, f-string fixing, and troubleshooting guides

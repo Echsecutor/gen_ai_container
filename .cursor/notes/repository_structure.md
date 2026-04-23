@@ -9,8 +9,8 @@ Docker container project for AI/ML tools, specifically InvokeAI and ComfyUI with
 ### Docker Components
 
 - `invoke_ai.Dockerfile` - InvokeAI container definition
-- `comfy.Dockerfile` - ComfyUI container definition
-- `comfy_entrypoint.sh` - ComfyUI startup script
+- `comfy.Dockerfile` - ComfyUI container. Base image: `ghcr.io/radiatingreverberations/comfyui-extensions:latest` (ComfyUI at `/comfyui`, venv at `/opt/venv`, includes xFormers, FlashAttention-2, SageAttention2++, Nunchaku, ComfyUI-Manager). Only adds apt packages (ffmpeg, sudo, wget, build-essential), civit_model_loader, and the volume symlink setup.
+- `comfy/comfy_entrypoint.sh` - ComfyUI startup script. Clones custom nodes, downloads video generation models (WAN 2.2, LTX-2.3, SkyReels V3), runs civit_model_loader, then launches ComfyUI.
 
 ### Scripts (`/scripts`)
 

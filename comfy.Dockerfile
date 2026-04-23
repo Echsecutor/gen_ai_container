@@ -1,23 +1,16 @@
-# syntax = edrevo/dockerfile-plus
+# Community base image: ComfyUI + xFormers + FlashAttention-2 + SageAttention2++ + Nunchaku + ComfyUI-Manager
+# See: https://github.com/radiatingreverberations/comfyui-docker
+FROM ghcr.io/radiatingreverberations/comfyui-extensions:latest
 
-
-# This image is based on the latest official PyTorch image, because it already contains CUDA, CuDNN, and PyTorch
-FROM pytorch/pytorch:2.6.0-cuda12.6-cudnn9-runtime
-
-# Apt should not ask for user input
 ENV DEBIAN_FRONTEND=noninteractive
 
-
-ARG COMFY_UI_VERSION=v0.3.59
-ARG COMFY_UI_MANAGER_VERSION=3.32.2
 ARG MOUNT_DIR=/workspace
 ENV MOUNT_DIR=${MOUNT_DIR}
 
 
-# Added ffmpeg + libs for video generation
+# git is already present in the base image; add ffmpeg and build tools for video generation and custom nodes
 RUN apt-get update -y && \
     apt-get install -y \
-        git \
         sudo \
         wget \
         ffmpeg \
@@ -27,24 +20,14 @@ RUN apt-get update -y && \
     && apt-get clean -y
 
 
-Add civit_model_loader /civit_model_loader
+ADD civit_model_loader /civit_model_loader
 
-RUN git clone https://github.com/comfyanonymous/ComfyUI.git /opt/comfyui \
-    && cd /opt/comfyui \
-    &&git checkout tags/${COMFY_UI_VERSION}
-
-
-RUN pip install \
-    --requirement /opt/comfyui/requirements.txt
-
-WORKDIR /opt/comfyui
-
-
-# mount one external volume and link dirs there in
+# Mount one external volume; symlink the ComfyUI data dirs into it so all
+# models, outputs, custom nodes and user settings persist on the host.
 RUN for dir in models output custom_nodes user; do \
-    rm -rf /opt/comfyui/$dir \
+    rm -rf /comfyui/$dir \
     && mkdir -p ${MOUNT_DIR}/$dir \
-    && ln -s ${MOUNT_DIR}/$dir /opt/comfyui/ \
+    && ln -s ${MOUNT_DIR}/$dir /comfyui/ \
     ; done
 
 EXPOSE 8188
@@ -54,9 +37,6 @@ ENTRYPOINT ["/bin/bash", "/entrypoint.sh"]
 
 VOLUME ["${MOUNT_DIR}"]
 
-
-
-# On startup, ComfyUI is started at its default port; the IP address is changed from localhost to 0.0.0.0, because Docker is only forwarding traffic
-# to the IP address it assigns to the container, which is unknown at build time; listening to 0.0.0.0 means that ComfyUI listens to all incoming
-# traffic; the auto-launch feature is disabled, because we do not want (nor is it possible) to open a browser window in a Docker container
-CMD ["/opt/conda/bin/python", "main.py", "--listen", "0.0.0.0", "--port", "8188", "--disable-auto-launch"]
+# ComfyUI is started at 0.0.0.0 so Docker can forward traffic to the container;
+# auto-launch is disabled because opening a browser inside a container is not possible.
+CMD ["/opt/venv/bin/python", "/comfyui/main.py", "--listen", "0.0.0.0", "--port", "8188", "--disable-auto-launch"]
