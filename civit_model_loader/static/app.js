@@ -198,6 +198,8 @@ class App {
     let conversionId = null;
     let pollingInterval = null;
     let isDownloading = false;
+    let consecutiveFailures = 0;
+    const MAX_CONSECUTIVE_FAILURES = 10;
 
     try {
       // Show initial loading status
@@ -218,6 +220,7 @@ class App {
       pollingInterval = setInterval(async () => {
         try {
           const status = await getConversionStatus(conversionId);
+          consecutiveFailures = 0;
           console.log(`Conversion ${conversionId} status:`, status);
           this.updateConversionStatus(status, statusDiv);
 
@@ -242,10 +245,23 @@ class App {
             }
           }
         } catch (error) {
-          console.error("Error polling conversion status:", error);
-          clearInterval(pollingInterval);
-          pollingInterval = null;
-          showToast("Error checking conversion status", "error");
+          consecutiveFailures++;
+          console.error(
+            `Error polling conversion status (${consecutiveFailures}/${MAX_CONSECUTIVE_FAILURES}):`,
+            error
+          );
+          if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+            clearInterval(pollingInterval);
+            pollingInterval = null;
+            showToast(
+              "Lost connection to server — conversion polling stopped",
+              "error"
+            );
+            if (statusDiv) {
+              statusDiv.innerHTML =
+                '<div class="error">❌ Lost connection to server. The conversion may still be running — try refreshing.</div>';
+            }
+          }
         }
       }, 1000); // Poll every second
     } catch (error) {

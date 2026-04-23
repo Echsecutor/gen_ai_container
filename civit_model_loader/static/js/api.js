@@ -17,7 +17,7 @@ class ApiClient {
   }
 
   /**
-   * Makes a HTTP request with error handling
+   * Makes a HTTP request with automatic retry for transient network errors
    * @param {string} endpoint - API endpoint
    * @param {Object} options - Fetch options
    * @returns {Promise<any>} - Response data
@@ -29,21 +29,37 @@ class ApiClient {
       ...options,
     };
 
-    const response = await fetch(url, config);
+    const maxRetries = 2;
+    let lastError;
 
-    if (!response.ok) {
-      throw new Error(
-        `API request failed: ${response.status} ${response.statusText}`
-      );
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        const response = await fetch(url, config);
+
+        if (!response.ok) {
+          throw new Error(
+            `API request failed: ${response.status} ${response.statusText}`
+          );
+        }
+
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          return await response.json();
+        } else {
+          return await response.text();
+        }
+      } catch (error) {
+        lastError = error;
+        const isNetworkError = error instanceof TypeError;
+        if (isNetworkError && attempt < maxRetries) {
+          await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+          continue;
+        }
+        throw error;
+      }
     }
 
-    // Handle different response types
-    const contentType = response.headers.get("content-type");
-    if (contentType && contentType.includes("application/json")) {
-      return await response.json();
-    } else {
-      return await response.text();
-    }
+    throw lastError;
   }
 
   /**

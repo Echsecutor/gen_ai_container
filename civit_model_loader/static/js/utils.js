@@ -231,8 +231,12 @@ export async function copyToClipboard(
   }
 }
 
+const _recentToasts = new Map();
+const _TOAST_COOLDOWN_MS = 10000;
+
 /**
- * Safe async error handler wrapper
+ * Safe async error handler wrapper with toast rate-limiting to prevent
+ * spamming the UI when polling encounters repeated transient errors.
  * @param {Function} asyncFn - The async function to wrap
  * @param {string} errorMessage - Default error message
  * @returns {Function} - Wrapped function with error handling
@@ -243,9 +247,15 @@ export function withErrorHandler(asyncFn, errorMessage = "An error occurred") {
       return await asyncFn.apply(this, args);
     } catch (error) {
       console.error(errorMessage, error);
-      // Import UI module dynamically to avoid circular deps
-      const { showToast } = await import("./ui.js");
-      showToast(`${errorMessage}: ${error.message}`, "error");
+
+      const now = Date.now();
+      const lastShown = _recentToasts.get(errorMessage) || 0;
+      if (now - lastShown > _TOAST_COOLDOWN_MS) {
+        _recentToasts.set(errorMessage, now);
+        const { showToast } = await import("./ui.js");
+        showToast(`${errorMessage}: ${error.message}`, "error");
+      }
+
       throw error;
     }
   };

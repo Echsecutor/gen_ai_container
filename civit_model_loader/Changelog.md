@@ -2,6 +2,12 @@
 
 ## WIP
 
+- Improved network error resilience for polling operations
+  - `ApiClient.request()` now retries transient network errors (TypeError / Failed to fetch) up to 2 times with backoff
+  - `withErrorHandler` toast notifications are rate-limited (10 s cooldown per message) to prevent UI spam during outages
+  - Conversion status polling no longer stops on first network error; requires 10 consecutive failures before giving up
+  - Download queue polling continues through brief network blips transparently
+
 - Added unsaved-changes browser warning: navigating away or closing the tab now shows a browser-native "Leave site?" dialog if the configuration has been modified since the last config JSON download
   - New `markDirty()` / `markClean()` / `hasUnsavedChanges()` methods on `AppState` in `state.js`
   - Dirty state is set on: API token save/clear, NSFW preference change, model add/remove, config import, and data reset
