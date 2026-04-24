@@ -7,6 +7,12 @@ if [ ! -d /opt/venv ]; then
 fi
 source /opt/venv/bin/activate
 
+# Ensure Node Manager is installed so missing custom-node packs can be resolved.
+pip install -U --pre comfyui-manager
+
+# Install onnx (needed by WanVideoWrapper FantasyPortrait nodes).
+pip install onnx
+
 # Creates the directories for the models inside of the volume that is mounted from the host
 echo "Creating directories for models..."
 
@@ -27,6 +33,7 @@ MODEL_DIRECTORIES=(
     "embeddings"
     "gligen"
     "hypernetworks"
+    "latent_upscale_models"
     "loras"
     "photomaker"
     "style_models"
@@ -44,7 +51,6 @@ done
 # /comfyui/custom_nodes is symlinked to the host volume, so we re-clone it here.
 pushd /comfyui/custom_nodes || exit
 git clone https://github.com/ltdrdata/ComfyUI-Manager comfyui-manager
-git clone https://github.com/kijai/ComfyUI-FluxTrainer.git
 git clone https://github.com/kijai/ComfyUI-KJNodes.git
 git clone https://github.com/rgthree/rgthree-comfy.git
 git clone https://github.com/orssorbit/ComfyUI-wanBlockswap
@@ -58,21 +64,20 @@ git clone https://github.com/city96/ComfyUI-GGUF
 git clone https://github.com/ltdrdata/was-node-suite-comfyui
 git clone https://github.com/Lightricks/ComfyUI-LTXVideo.git ComfyUI-LTXVideo
 git clone https://github.com/kijai/ComfyUI-WanVideoWrapper.git ComfyUI-WanVideoWrapper
-git clone https://github.com/soulcreator11/ComfyUI_SimpleMath.git ComfyUI-SimpleMath
+git clone https://github.com/kijai/ComfyUI_essentials.git ComfyUI-essentials
 popd || exit
 
 # Populate the user workflow library from example workflows bundled with custom nodes.
 # Uses cp -n (no-clobber) so user modifications are never overwritten on container restart.
 echo "Installing example workflows..."
 WORKFLOW_DIR="$(readlink -f /comfyui/user)/default/workflows"
-mkdir -p "${WORKFLOW_DIR}/LTX-2.3"
 mkdir -p "${WORKFLOW_DIR}/SkyReels-V3"
 mkdir -p "${WORKFLOW_DIR}/WAN-2.2"
 
-# LTX-2.3 official example workflows (T2V, I2V, IC-LoRA control variants)
-for f in /comfyui/custom_nodes/ComfyUI-LTXVideo/example_workflows/2.3/*.json; do
-    [ -f "$f" ] && cp -n "$f" "${WORKFLOW_DIR}/LTX-2.3/"
-done
+# NOTE: ComfyUI-LTXVideo example workflows (2.3) expect Lightricks' official unified
+# checkpoints (~46 GB each) in checkpoints/, which differ from Kijai's separated fp8
+# format used here. Copying them would cause persistent "Missing Models" warnings.
+# Users can still run LTX-2.3 via native ComfyUI nodes with the downloaded split models.
 
 # SkyReels V3 R2V: Phantom reference-to-video workflow (uses Phantom model, closest
 # bundled workflow to SkyReels R2V functionality)
@@ -122,6 +127,7 @@ mkdir -p /comfyui/models/vae/wanvideo
 mkdir -p /comfyui/models/loras/WanVideo/Lightx2v
 mkdir -p /comfyui/models/loras/WanVideo/Pusa
 mkdir -p /comfyui/models/vae_approx
+mkdir -p /comfyui/models/latent_upscale_models
 
 echo "Installing shared base models..."
 download_model https://huggingface.co/ai-forever/Real-ESRGAN/resolve/main/RealESRGAN_x2.pth /comfyui/models/upscale_models/RealESRGAN_x2.pth
@@ -150,9 +156,11 @@ download_model https://huggingface.co/Kijai/WanVideo_comfy_fp8_scaled/resolve/ma
     /comfyui/models/diffusion_models/WanVideo/2_2/Wan2_2-T2V-A14B-LOW_fp8_e4m3fn_scaled_KJ.safetensors
 # Tiny VAE for Pusa extension
 download_model https://huggingface.co/Kijai/WanVideo_comfy/resolve/main/taew2_1.safetensors /comfyui/models/vae_approx/taew2_1.safetensors
-# Pusa LoRA for 2.2 LOW
+# Pusa LoRAs for 2.2 LOW and HIGH
 download_model https://huggingface.co/Kijai/WanVideo_comfy/resolve/main/Pusa/Wan22_PusaV1_lora_LOW_resized_dynamic_avg_rank_98_bf16.safetensors \
     /comfyui/models/loras/WanVideo/Pusa/Wan22_PusaV1_lora_LOW_resized_dynamic_avg_rank_98_bf16.safetensors
+download_model https://huggingface.co/Kijai/WanVideo_comfy/resolve/main/Pusa/Wan22_PusaV1_lora_HIGH_resized_dynamic_avg_rank_98_bf16.safetensors \
+    /comfyui/models/loras/WanVideo/Pusa/Wan22_PusaV1_lora_HIGH_resized_dynamic_avg_rank_98_bf16.safetensors
 
 # --- SkyReels V3 R2V (Phantom workflow) ---
 echo "Installing SkyReels V3 diffusion models..."
@@ -242,13 +250,17 @@ cleanup() {
 # Set up signal traps to forward signals to child processes
 trap cleanup SIGTERM SIGINT SIGQUIT
 
+# Ensure ComfyUI starts with the Manager enabled so missing nodes can be installed.
+COMFYUI_ARGS=("$@")
+COMFYUI_ARGS+=("--enable-manager")
+
 # Under normal circumstances, the container would be run as the root user, which is not ideal, because the files that are created by the container in
 # the volumes mounted from the host, i.e., custom nodes and models downloaded by the ComfyUI Manager, are owned by the root user; the user can specify
 # the user ID and group ID of the host user as environment variables when starting the container; if these environment variables are set, a non-root
 # user with the specified user ID and group ID is created, and the container is run as this user
 if [ -z "$USER_ID" ] || [ -z "$GROUP_ID" ]; then
     echo "Running container as $USER..."
-    nohup "$@" >>"${LOG_FILE}" 2>&1 &
+    nohup "${COMFYUI_ARGS[@]}" >>"${LOG_FILE}" 2>&1 &
     COMFY_PID=$!
 else
     echo "Creating non-root user..."
@@ -260,7 +272,7 @@ else
 
     echo "Running container as $USER..."
 
-    nohup sudo --set-home --preserve-env=PATH --user \#$USER_ID "$@" >>"${LOG_FILE}" 2>&1 &
+    nohup sudo --set-home --preserve-env=PATH --user \#$USER_ID "${COMFYUI_ARGS[@]}" >>"${LOG_FILE}" 2>&1 &
     COMFY_PID=$!
 fi
 PIDS+=("$COMFY_PID")

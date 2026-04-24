@@ -1,0 +1,30 @@
+# ComfyUI extra model paths configuration.
+# Placed at /comfyui/extra_model_paths.yaml so ComfyUI picks it up on startup.
+# This makes /workspace/models the default download and lookup path so everything
+# persists in the host-mounted volume (/mnt/IV_AI_Shared/comfyui).
+comfyui:
+  base_path: /workspace
+  is_default: true
+  checkpoints: models/checkpoints/
+  clip: models/clip/
+  clip_vision: models/clip_vision/
+  configs: models/configs/
+  controlnet: models/controlnet/
+  diffusion_models: |
+    models/diffusion_models
+    models/unet
+  embeddings: models/embeddings/
+  gligen: models/gligen/
+  hypernetworks: models/hypernetworks/
+  loras: models/loras/
+  photomaker: models/photomaker/
+  style_models: models/style_models/
+  text_encoders: |
+    models/text_encoders/
+    models/clip/
+  upscale_models: models/upscale_models/
+  latent_upscale_models: models/latent_upscale_models/
+  vae: models/vae/
+  vae_approx: models/vae_approx/
+  audio_encoders: models/audio_encoders/
+  model_patches: models/model_patches/

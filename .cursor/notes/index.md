@@ -12,7 +12,7 @@ This is a Docker container project for AI/ML tools, specifically focused on Invo
 
 ### Project Structure
 
-- [`repository_structure.md`](repository_structure.md) - Overview of project folder structure and components
+- [`repository_structure.md`](repository_structure.md) - Overview of project folder structure, volume mounting, model directory configuration (`extra_model_paths.yaml`), and custom node setup
 
 ### Components
 

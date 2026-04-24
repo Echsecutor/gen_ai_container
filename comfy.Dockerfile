@@ -37,6 +37,7 @@ RUN for dir in models output custom_nodes user; do \
 
 EXPOSE 8188
 
+ADD comfy/extra_model_paths.yaml /comfyui/extra_model_paths.yaml
 ADD comfy/comfy_entrypoint.sh /entrypoint.sh
 ENTRYPOINT ["/bin/bash", "/entrypoint.sh"]
 

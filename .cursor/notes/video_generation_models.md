@@ -184,7 +184,7 @@ Long video generation frame counts: `--num_frames 257` = ~10s, `377` = 15s, `777
 
 | Model | Support Type | Custom Nodes | In Container? |
 |-------|-------------|--------------|---------------|
-| Wan 2.2 | Native (built-in) | None needed | ✅ Yes (GGUF Q4_K_M) |
+| Wan 2.2 | Native (built-in) + `ComfyUI-WanVideoWrapper` | Kijai node | ✅ Yes (fp8 scaled) |
 | LTX-2.3 | Native + `ComfyUI-LTXVideo` | Lightricks node | ✅ Yes (fp8 transformer + Gemma fp8) |
 | SkyReels V3 R2V + V2V | `ComfyUI-WanVideoWrapper` | Kijai node | ✅ Yes (fp8; reuses WAN encoder/VAE) |
 | HunyuanVideo | Community | `ComfyUI-HunyuanVideoWrapper` (Kijai) | ❌ No (needs 45-80GB VRAM) |
@@ -199,33 +199,35 @@ Pre-installed into `${MOUNT_DIR}/user/default/workflows/` at startup (via `cp -n
 
 | Folder | File | Source | Purpose |
 |--------|------|--------|---------|
-| `LTX-2.3/` | `LTX-2.3_T2V_I2V_Single_Stage_Distilled_Full.json` | ComfyUI-LTXVideo repo | T2V + I2V single-stage |
-| `LTX-2.3/` | `LTX-2.3_T2V_I2V_Two_Stage_Distilled.json` | ComfyUI-LTXVideo repo | T2V + I2V with upsampling |
-| `LTX-2.3/` | `LTX-2.3_ICLoRA_Union_Control_Distilled.json` | ComfyUI-LTXVideo repo | IC-LoRA depth+pose+edge control |
-| `LTX-2.3/` | `LTX-2.3_ICLoRA_Motion_Track_Distilled.json` | ComfyUI-LTXVideo repo | IC-LoRA motion tracking |
 | `SkyReels-V3/` | `SkyReels-V3-R2V_phantom_multi-subject.json` | ComfyUI-WanVideoWrapper repo | R2V: multi-subject from ref images |
-| `SkyReels-V3/` | `SkyReels-V3-V2V_pusa_video-extension.json` | ComfyUI-WanVideoWrapper repo | V2V: extend existing video |
-| `WAN-2.2/` | `wan2.2_14B_I2V_pusa.json` | ComfyUI-WanVideoWrapper repo | WAN 2.2 image-to-video |
-| `WAN-2.2/` | `wan2.2_5B_I2V.json` | ComfyUI-WanVideoWrapper repo | WAN 2.2 5B image-to-video |
+| `WAN-2.2/` | `WAN-2.2-V2V_pusa_video-extension.json` | ComfyUI-WanVideoWrapper repo | V2V: Pusa video extension |
 
-> **Note on LTX-2.3 workflows**: The Lightricks example workflows reference the full-checkpoint model format (`checkpoints/`). Our container uses Kijai's transformer-only fp8 format (`diffusion_models/`). Users need to update the model loader node once when first opening an LTX-2.3 workflow. SkyReels V3 and WAN workflows work as-is since they use WanVideoWrapper's flexible model loader.
-> 
-> Native ComfyUI LTX-2.3 templates (via Template Library → Video) also work and auto-download their own model files.
+> **Note on LTX-2.3 workflows**: ComfyUI-LTXVideo example workflows are **not** copied into the workflow library because they expect Lightricks' official unified checkpoints (`checkpoints/`, ~46 GB each), whereas this container uses Kijai's smaller separated fp8 format (`diffusion_models/` + `clip/` + `text_encoders/`, ~39 GB total). Copying them would cause persistent "Missing Models" warnings on every startup.
+>
+> Users can still run LTX-2.3 via native ComfyUI nodes (Load Diffusion Model + CLIPLoader + VAELoader) with the downloaded split models, or manually download official checkpoints if they want the bundled example workflows.
+>
+> SkyReels V3 and WAN workflows work as-is since they use WanVideoWrapper's flexible model loader.
 
 ### Container Model File Locations (`comfy_entrypoint.sh`)
 
 | File | Path | Size | Purpose |
 |------|------|------|---------|
-| `wan2.2_t2v_high/low_noise_14B_Q4_K_M.gguf` | `unet/` | ~8GB×2 | WAN 2.2 T2V |
-| `wan2.2_i2v_high/low_noise_14B_Q4_K_M.gguf` | `unet/` | ~8GB×2 | WAN 2.2 I2V |
-| `umt5_xxl_fp8/fp16.safetensors` | `clip/` | ~10/20GB | WAN+SkyReels text encoder |
-| `wan_2.1_vae.safetensors` | `vae/` | ~0.5GB | WAN+SkyReels VAE |
+| `Wan2_2-T2V-A14B-HIGH_fp8_e4m3fn_scaled_KJ.safetensors` | `diffusion_models/WanVideo/2_2/` | ~15GB | WAN 2.2 T2V (HIGH quality) |
+| `Wan2_2-T2V-A14B-LOW_fp8_e4m3fn_scaled_KJ.safetensors` | `diffusion_models/WanVideo/2_2/` | ~15GB | WAN 2.2 T2V (LOW quality) |
+| `umt5_xxl_fp16.safetensors` | `clip/` | ~20GB | WAN+SkyReels text encoder (fp16) |
+| `umt5_xxl_fp8_e4m3fn_scaled.safetensors` | `clip/` | ~10GB | WAN+SkyReels text encoder (fp8) |
+| `umt5-xxl-enc-bf16.safetensors` | `text_encoders/` | ~11GB | WanVideoWrapper T5 encoder |
+| `Wan2_1_VAE_bf16.safetensors` | `vae/wanvideo/` | ~0.5GB | WAN+SkyReels VAE |
 | `clip_vision_h.safetensors` | `clip_vision/` | ~2.5GB | WAN I2V + SkyReels R2V |
+| `taew2_1.safetensors` | `vae_approx/` | ~0.2GB | WAN 2.2 tiny VAE |
 | `ltx-2.3-22b-distilled_transformer_only_fp8_scaled.safetensors` | `diffusion_models/` | ~23.5GB | LTX-2.3 transformer |
 | `gemma_3_12B_it_fp8_e4m3fn.safetensors` | `clip/` | ~13.2GB | LTX-2.3 text encoder |
 | `ltx-2.3_text_projection_bf16.safetensors` | `text_encoders/` | ~2.3GB | LTX-2.3 projection |
 | `Wan21_SkyReelsV3-R2V_fp8_scaled_mixed.safetensors` | `diffusion_models/` | ~14.5GB | SkyReels V3 R2V |
 | `Wan21-SkyReelsV3-V2V_fp8_scaled_mixed.safetensors` | `diffusion_models/` | ~14.5GB | SkyReels V3 V2V |
+| `lightx2v_T2V_14B_cfg_step_distill_v2_lora_rank64_bf16_.safetensors` | `loras/WanVideo/Lightx2v/` | ~0.5GB | Shared Lightx2v LoRA |
+| `Wan22_PusaV1_lora_LOW_resized_dynamic_avg_rank_98_bf16.safetensors` | `loras/WanVideo/Pusa/` | ~0.5GB | WAN 2.2 Pusa LoRA (LOW) |
+| `Wan22_PusaV1_lora_HIGH_resized_dynamic_avg_rank_98_bf16.safetensors` | `loras/WanVideo/Pusa/` | ~0.5GB | WAN 2.2 Pusa LoRA (HIGH) |
 
 ---
 

@@ -11,6 +11,7 @@ Docker container project for AI/ML tools, specifically InvokeAI and ComfyUI with
 - `invoke_ai.Dockerfile` - InvokeAI container definition
 - `comfy.Dockerfile` - ComfyUI container. Base image: `ghcr.io/radiatingreverberations/comfyui-extensions:latest` (ComfyUI at `/comfyui`, venv at `/opt/venv`, includes xFormers, FlashAttention-2, SageAttention2++, Nunchaku, ComfyUI-Manager). Only adds apt packages (ffmpeg, sudo, wget, build-essential), civit_model_loader, and the volume symlink setup.
 - `comfy/comfy_entrypoint.sh` - ComfyUI startup script. Clones custom nodes, downloads video generation models (WAN 2.2, LTX-2.3, SkyReels V3), runs civit_model_loader, then launches ComfyUI.
+- `comfy/extra_model_paths.yaml` - ComfyUI model directory configuration. Sets `/workspace/models` as the default `is_default` path so ComfyUI Manager downloads and lookups persist in the host-mounted volume.
 
 ### Scripts (`/scripts`)
 
@@ -43,9 +44,17 @@ Docker container project for AI/ML tools, specifically InvokeAI and ComfyUI with
 
 ## Volume Mounting
 
-- Everything persistent mounted under `/workspace`
-- Models, databases, outputs, configurations all in this volume
-- Ensures data persistence across container restarts
+- Host volume mounted at `/workspace` inside the container.
+- The Dockerfile symlinks `/comfyui/models`, `/comfyui/output`, `/comfyui/custom_nodes`, and `/comfyui/user` into `/workspace` so all persistent data lives on the host mount.
+- `extra_model_paths.yaml` explicitly configures `/workspace/models` as the default model base path with `is_default: true`, ensuring ComfyUI Manager downloads and model lookups always target the mounted folder.
+- Models, databases, outputs, configurations all in this volume.
+- Ensures data persistence across container restarts.
+
+## Custom Nodes & Model Formats
+
+- Cloned custom nodes include: ComfyUI-Manager, KJNodes, rgthree-comfy, wanBlockswap, VideoHelperSuite, comfyui-various, mxToolkit, Frame-Interpolation, Custom-Scripts, MediaMixer, GGUF, was-node-suite, LTXVideo, WanVideoWrapper, ComfyUI-essentials.
+- **Removed nodes**: `ComfyUI-SimpleMath` (empty repository, missing `__init__.py`) and `ComfyUI-FluxTrainer` (training-focused, causes 11s import failure).
+- **LTX-2.3 model mismatch**: Kijai's separated fp8 checkpoint format (`diffusion_models/`, `clip/`, `text_encoders/`) is used because it is smaller (~23.5 GB transformer + ~13 GB text encoder vs ~46 GB official unified checkpoint). The official ComfyUI-LTXVideo example workflows expect the unified `checkpoints/` format, so they are **not** copied into the workflow library to avoid persistent "Missing Models" warnings. Users can still run LTX-2.3 via native ComfyUI nodes with the downloaded split models.
 
 ## Services & Ports
 
