@@ -58,6 +58,7 @@ git clone https://github.com/city96/ComfyUI-GGUF
 git clone https://github.com/ltdrdata/was-node-suite-comfyui
 git clone https://github.com/Lightricks/ComfyUI-LTXVideo.git ComfyUI-LTXVideo
 git clone https://github.com/kijai/ComfyUI-WanVideoWrapper.git ComfyUI-WanVideoWrapper
+git clone https://github.com/soulcreator11/ComfyUI_SimpleMath.git ComfyUI-SimpleMath
 popd || exit
 
 # Populate the user workflow library from example workflows bundled with custom nodes.
@@ -73,18 +74,14 @@ for f in /comfyui/custom_nodes/ComfyUI-LTXVideo/example_workflows/2.3/*.json; do
     [ -f "$f" ] && cp -n "$f" "${WORKFLOW_DIR}/LTX-2.3/"
 done
 
-# SkyReels V3 R2V: uses the Phantom (multi-subject reference-to-video) workflow
+# SkyReels V3 R2V: Phantom reference-to-video workflow (uses Phantom model, closest
+# bundled workflow to SkyReels R2V functionality)
 cp -n /comfyui/custom_nodes/ComfyUI-WanVideoWrapper/example_workflows/wanvideo_2_1_14B_phantom_subject2vid_example_02.json \
     "${WORKFLOW_DIR}/SkyReels-V3/SkyReels-V3-R2V_phantom_multi-subject.json" 2>/dev/null || true
-# SkyReels V3 V2V: uses the Pusa extension (video continuation) workflow
-cp -n /comfyui/custom_nodes/ComfyUI-WanVideoWrapper/example_workflows/wanvideo_2_2_14B_Pusa_extension_example_01.json \
-    "${WORKFLOW_DIR}/SkyReels-V3/SkyReels-V3-V2V_pusa_video-extension.json" 2>/dev/null || true
 
-# WAN 2.2 helper workflows from WanVideoWrapper (I2V via Pusa, 5B variant)
-cp -n /comfyui/custom_nodes/ComfyUI-WanVideoWrapper/example_workflows/wanvideo_2_1_14B_pusa_I2V_example_01.json \
-    "${WORKFLOW_DIR}/WAN-2.2/wan2.2_14B_I2V_pusa.json" 2>/dev/null || true
-cp -n /comfyui/custom_nodes/ComfyUI-WanVideoWrapper/example_workflows/wanvideo_2_2_5B_I2V_example_WIP.json \
-    "${WORKFLOW_DIR}/WAN-2.2/wan2.2_5B_I2V.json" 2>/dev/null || true
+# WAN 2.2 V2V: Pusa video-extension workflow (verified, uses available 2.2 models)
+cp -n /comfyui/custom_nodes/ComfyUI-WanVideoWrapper/example_workflows/wanvideo_2_2_14B_Pusa_extension_example_01.json \
+    "${WORKFLOW_DIR}/WAN-2.2/WAN-2.2-V2V_pusa_video-extension.json" 2>/dev/null || true
 
 echo "Example workflows installed."
 
@@ -113,31 +110,67 @@ download_model() {
     WGET_PIDS+=("$!")
 }
 
-# Installing Base Models for WAN flow
-echo "Installing Base Models for WAN flow..."
+# ---------------------------------------------------------------------------
+# Download models that the bundled example workflows expect.
+# All paths match the widget values inside the workflow JSONs so ComfyUI
+# finds them out-of-the-box.
+# ---------------------------------------------------------------------------
+
+# Shared helpers
+mkdir -p /comfyui/models/diffusion_models/WanVideo/2_2
+mkdir -p /comfyui/models/vae/wanvideo
+mkdir -p /comfyui/models/loras/WanVideo/Lightx2v
+mkdir -p /comfyui/models/loras/WanVideo/Pusa
+mkdir -p /comfyui/models/vae_approx
+
+echo "Installing shared base models..."
 download_model https://huggingface.co/ai-forever/Real-ESRGAN/resolve/main/RealESRGAN_x2.pth /comfyui/models/upscale_models/RealESRGAN_x2.pth
 download_model https://huggingface.co/ai-forever/Real-ESRGAN/resolve/main/RealESRGAN_x4.pth /comfyui/models/upscale_models/RealESRGAN_x4.pth
+
+# CLIP text encoder (used by native ComfyUI CLIPLoader nodes)
 download_model https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/text_encoders/umt5_xxl_fp16.safetensors /comfyui/models/clip/umt5_xxl_fp16.safetensors
 download_model https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors /comfyui/models/clip/umt5_xxl_fp8_e4m3fn_scaled.safetensors
-download_model https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/vae/wan_2.1_vae.safetensors /comfyui/models/vae/wan_2.1_vae.safetensors
-# LORAs
-echo "Installing LORAs for WAN flow..."
-download_model https://huggingface.co/lightx2v/Wan2.1-I2V-14B-480P-StepDistill-CfgDistill-Lightx2v/resolve/main/loras/Wan21_I2V_14B_lightx2v_cfg_step_distill_lora_rank64.safetensors /comfyui/models/loras/Wan21_I2V_14B_lightx2v_cfg_step_distill_lora_rank64.safetensors
 
-# UNETs
-## txt2vid
-echo "Installing UNETs for WAN flow txt2vid..."
-download_model https://huggingface.co/bullerwins/Wan2.2-I2V-A14B-GGUF/resolve/main/wan2.2_i2v_high_noise_14B_Q4_K_M.gguf /comfyui/models/unet/wan2.2_i2v_high_noise_14B_Q4_K_M.gguf
-download_model https://huggingface.co/bullerwins/Wan2.2-I2V-A14B-GGUF/resolve/main/wan2.2_i2v_low_noise_14B_Q4_K_M.gguf /comfyui/models/unet/wan2.2_i2v_low_noise_14B_Q4_K_M.gguf
+# T5 text encoder for WanVideoWrapper LoadWanVideoT5TextEncoder (~11 GB)
+download_model https://huggingface.co/Kijai/WanVideo_comfy/resolve/main/umt5-xxl-enc-bf16.safetensors /comfyui/models/text_encoders/umt5-xxl-enc-bf16.safetensors
 
-## img2vid
-echo "Installing UNETs for WAN flow img2vid..."
-download_model https://huggingface.co/bullerwins/Wan2.2-T2V-A14B-GGUF/resolve/main/wan2.2_t2v_high_noise_14B_Q4_K_M.gguf /comfyui/models/unet/wan2.2_t2v_high_noise_14B_Q4_K_M.gguf
-download_model https://huggingface.co/bullerwins/Wan2.2-T2V-A14B-GGUF/resolve/main/wan2.2_t2v_low_noise_14B_Q4_K_M.gguf /comfyui/models/unet/wan2.2_t2v_low_noise_14B_Q4_K_M.gguf
+# VAE models that WanVideoWrapper VAELoader expects
+download_model https://huggingface.co/Kijai/WanVideo_comfy/resolve/main/Wan2_1_VAE_bf16.safetensors /comfyui/models/vae/wanvideo/Wan2_1_VAE_bf16.safetensors
 
-# CLIP vision (needed for WAN I2V and SkyReels V3 R2V reference-image workflows)
-echo "Installing CLIP vision model..."
+# CLIP vision (needed for Phantom R2V reference-image workflow)
 download_model https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/clip_vision/clip_vision_h.safetensors /comfyui/models/clip_vision/clip_vision_h.safetensors
+
+# --- WAN 2.2 V2V (Pusa extension workflow) ---
+echo "Installing WAN 2.2 diffusion models..."
+# Actual repo filename uses A14B_HIGH (underscore); workflow expects A14B-HIGH (hyphen).
+# wget -O saves to the workflow-expected name directly.
+download_model https://huggingface.co/Kijai/WanVideo_comfy_fp8_scaled/resolve/main/T2V/Wan2_2-T2V-A14B_HIGH_fp8_e4m3fn_scaled_KJ.safetensors \
+    /comfyui/models/diffusion_models/WanVideo/2_2/Wan2_2-T2V-A14B-HIGH_fp8_e4m3fn_scaled_KJ.safetensors
+download_model https://huggingface.co/Kijai/WanVideo_comfy_fp8_scaled/resolve/main/T2V/Wan2_2-T2V-A14B-LOW_fp8_e4m3fn_scaled_KJ.safetensors \
+    /comfyui/models/diffusion_models/WanVideo/2_2/Wan2_2-T2V-A14B-LOW_fp8_e4m3fn_scaled_KJ.safetensors
+# Tiny VAE for Pusa extension
+download_model https://huggingface.co/Kijai/WanVideo_comfy/resolve/main/taew2_1.safetensors /comfyui/models/vae_approx/taew2_1.safetensors
+# Pusa LoRA for 2.2 LOW
+download_model https://huggingface.co/Kijai/WanVideo_comfy/resolve/main/Pusa/Wan22_PusaV1_lora_LOW_resized_dynamic_avg_rank_98_bf16.safetensors \
+    /comfyui/models/loras/WanVideo/Pusa/Wan22_PusaV1_lora_LOW_resized_dynamic_avg_rank_98_bf16.safetensors
+
+# --- SkyReels V3 R2V (Phantom workflow) ---
+echo "Installing SkyReels V3 diffusion models..."
+# Phantom fp8 scaled for the R2V workflow (~15 GB)
+download_model https://huggingface.co/Kijai/WanVideo_comfy_fp8_scaled/resolve/main/T2V/Wan2_1-T2V-14B-Phantom_fp8_e4m3fn_scaled_KJ.safetensors \
+    /comfyui/models/diffusion_models/WanVideo/Wan2_1-T2V-14B-Phantom_fp8_e4m3fn_scaled_KJ.safetensors
+# Also keep the native SkyReels V3 models for user custom workflows
+download_model https://huggingface.co/Kijai/WanVideo_comfy_fp8_scaled/resolve/main/SkyReelsV3/Wan21_SkyReelsV3-R2V_fp8_scaled_mixed.safetensors \
+    /comfyui/models/diffusion_models/Wan21_SkyReelsV3-R2V_fp8_scaled_mixed.safetensors
+download_model https://huggingface.co/Kijai/WanVideo_comfy_fp8_scaled/resolve/main/SkyReelsV3/Wan21-SkyReelsV3-V2V_fp8_scaled_mixed.safetensors \
+    /comfyui/models/diffusion_models/Wan21-SkyReelsV3-V2V_fp8_scaled_mixed.safetensors
+
+# --- Shared LoRAs (used by both workflows) ---
+echo "Installing LoRAs..."
+# Actual repo filename has no trailing underscore; workflow expects one.
+# wget -O saves to the workflow-expected name directly.
+download_model https://huggingface.co/Kijai/WanVideo_comfy/resolve/main/Lightx2v/lightx2v_T2V_14B_cfg_step_distill_v2_lora_rank64_bf16.safetensors \
+    /comfyui/models/loras/WanVideo/Lightx2v/lightx2v_T2V_14B_cfg_step_distill_v2_lora_rank64_bf16_.safetensors
 
 # Installing Base Models for LTX-2.3 flow
 # Uses Kijai's fp8 separated checkpoint format (ComfyUI-LTXVideo node handles auto-download of the VAE on first use)
@@ -148,14 +181,6 @@ download_model https://huggingface.co/Kijai/LTX2.3_comfy/resolve/main/diffusion_
 download_model https://huggingface.co/GitMylo/LTX-2-comfy_gemma_fp8_e4m3fn/resolve/main/gemma_3_12B_it_fp8_e4m3fn.safetensors /comfyui/models/clip/gemma_3_12B_it_fp8_e4m3fn.safetensors
 # Text projection for LTX-2.3 22B (~2.3 GB)
 download_model https://huggingface.co/Kijai/LTX2.3_comfy/resolve/main/text_encoders/ltx-2.3_text_projection_bf16.safetensors /comfyui/models/text_encoders/ltx-2.3_text_projection_bf16.safetensors
-
-# Installing Base Models for SkyReels V3 flow
-# R2V and V2V are Wan-based: they reuse the already-downloaded WAN UMT5 text encoder and WAN VAE
-echo "Installing Base Models for SkyReels V3 flow..."
-# R2V (Reference-to-Video): generate video from 1-4 reference images, fp8 scaled (~14.5 GB)
-download_model https://huggingface.co/Kijai/WanVideo_comfy_fp8_scaled/resolve/main/SkyReelsV3/Wan21_SkyReelsV3-R2V_fp8_scaled_mixed.safetensors /comfyui/models/diffusion_models/Wan21_SkyReelsV3-R2V_fp8_scaled_mixed.safetensors
-# V2V (Video Extension): extend/continue existing video clips, fp8 scaled (~14.5 GB)
-download_model https://huggingface.co/Kijai/WanVideo_comfy_fp8_scaled/resolve/main/SkyReelsV3/Wan21-SkyReelsV3-V2V_fp8_scaled_mixed.safetensors /comfyui/models/diffusion_models/Wan21-SkyReelsV3-V2V_fp8_scaled_mixed.safetensors
 
 # Wait for all wget background processes to finish, tailing the wget log while any are running
 
