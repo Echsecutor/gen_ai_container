@@ -17,6 +17,9 @@ RUN apt-get update -y && \
         libsm6 \
         libxext6 \
         build-essential \
+        python3 \
+        python3-pip \
+        python3-venv \
     && apt-get clean -y
 
 
