@@ -100,16 +100,15 @@ for CUSTOM_NODE_DIRECTORY in /comfyui/custom_nodes/*; do
     fi
 done
 
-WGET_COMMAND="wget --continue -T 5 -t 5 -r"
+WGET_COMMAND="wget --continue -T 30 -t 5"
 WGET_PIDS=()
 WGET_LOG_FILE=$HOME/wget.log
 echo >"$WGET_LOG_FILE"
 
 download_model() {
-    if [ -f "$2" ]; then
-        echo "File $2 already exists, skipping download."
-        return 0
-    fi
+    # --continue asks the server to skip already-downloaded bytes.
+    # If the local file is complete the server returns 416 and wget exits 0
+    # without re-downloading. If the file is partial it resumes.
     $WGET_COMMAND "$1" -O "$2" >>$WGET_LOG_FILE 2>&1 &
     WGET_PIDS+=("$!")
 }

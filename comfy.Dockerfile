@@ -8,11 +8,13 @@ ARG MOUNT_DIR=/workspace
 ENV MOUNT_DIR=${MOUNT_DIR}
 
 
-# git is already present in the base image; add ffmpeg and build tools for video generation and custom nodes
+# Install core runtime deps: git, python3, wget, ffmpeg, and build tools for custom nodes / model downloads
 RUN apt-get update -y && \
     apt-get install -y \
         sudo \
         wget \
+        ca-certificates \
+        git \
         ffmpeg \
         libsm6 \
         libxext6 \
