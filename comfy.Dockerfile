@@ -1,31 +1,39 @@
-# Community base image: ComfyUI + xFormers + FlashAttention-2 + SageAttention2++ + Nunchaku + ComfyUI-Manager
-# See: https://github.com/radiatingreverberations/comfyui-docker
-FROM ghcr.io/radiatingreverberations/comfyui-extensions:latest
+# This image is based on the official PyTorch image, because it already contains CUDA, CuDNN, and PyTorch
+# PyTorch 2.6 + CUDA 12.6 is the last combination that still supports Tesla P40 (sm_61 / compute capability 6.1)
+# See: https://github.com/astral-sh/uv/issues/14742
+FROM pytorch/pytorch:2.6.0-cuda12.6-cudnn9-runtime
 
+# Apt should not ask for user input
 ENV DEBIAN_FRONTEND=noninteractive
 
+ARG COMFY_UI_VERSION=v0.3.59
+ARG COMFY_UI_MANAGER_VERSION=3.32.2
 ARG MOUNT_DIR=/workspace
 ENV MOUNT_DIR=${MOUNT_DIR}
 
 
-# Install core runtime deps: git, python3, wget, ffmpeg, and build tools for custom nodes / model downloads
+# Install core runtime deps: git, wget, ffmpeg, and build tools for custom nodes / model downloads
 RUN apt-get update -y && \
     apt-get install -y \
+        git \
         sudo \
         wget \
-        ca-certificates \
-        git \
         ffmpeg \
         libsm6 \
         libxext6 \
         build-essential \
-        python3 \
-        python3-pip \
-        python3-venv \
     && apt-get clean -y
 
 
 ADD civit_model_loader /civit_model_loader
+
+RUN git clone https://github.com/comfyanonymous/ComfyUI.git /comfyui \
+    && cd /comfyui \
+    && git checkout tags/${COMFY_UI_VERSION}
+
+RUN pip install \
+    --requirement /comfyui/requirements.txt
+
 
 # Mount one external volume; symlink the ComfyUI data dirs into it so all
 # models, outputs, custom nodes and user settings persist on the host.

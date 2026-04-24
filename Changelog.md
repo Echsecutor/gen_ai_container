@@ -2,13 +2,12 @@
 
 ## WIP
 
-- Switched `comfy.Dockerfile` base image from `pytorch/pytorch` to `ghcr.io/radiatingreverberations/comfyui-extensions`
-  - ComfyUI, xFormers, FlashAttention-2, SageAttention2++, Nunchaku, and ComfyUI-Manager are now pre-installed in the base image
-  - Removes manual `git clone` of ComfyUI and `pip install requirements.txt` from the build, significantly reducing build time
-  - Updated all container paths from `/opt/comfyui` to `/comfyui` to match base image layout
-  - Updated CMD python path to `/opt/venv/bin/python` and entrypoint to create the venv at startup
-  - Fixed `chown /opt/comfyui-manager` bug (path did not exist); now chowns `/comfyui` and `/opt/venv` instead
-  - Removed duplicate `rgthree-comfy` custom node clone
+- Reverted `comfy.Dockerfile` base image from `ghcr.io/radiatingreverberations/comfyui-extensions` back to `pytorch/pytorch:2.6.0-cuda12.6-cudnn9-runtime`
+  - The radiatingreverberations image uses PyTorch 2.10 + CUDA 13.0, which dropped support for compute capability < 7.5 (e.g. Tesla P40 sm_61)
+  - PyTorch 2.6 + CUDA 12.6 is the latest official combination that still supports sm_61
+  - Re-added manual `git clone` of ComfyUI and `pip install requirements.txt` to the build
+  - Kept all `/comfyui` paths, entrypoint venv logic, and video-generation features added in the previous WIP
+  - See `.cursor/notes/gpu_compatibility.md` for the full compatibility matrix
 - Added LTX-2.3 video generation support to ComfyUI container
   - Added `ComfyUI-LTXVideo` (Lightricks) custom node
   - Downloads: LTX-2.3 22B distilled transformer (fp8, ~23.5GB), Gemma 3 12B text encoder (fp8, ~13.2GB), text projection (~2.3GB)

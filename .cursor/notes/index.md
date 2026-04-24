@@ -28,6 +28,7 @@ This is a Docker container project for AI/ML tools, specifically focused on Invo
 ### Development and Troubleshooting
 
 - [`development_tools.md`](development_tools.md) - Development tools, autopep8 safety configuration, f-string fixing, and troubleshooting guides
+- [`gpu_compatibility.md`](gpu_compatibility.md) - GPU compute capability vs CUDA Toolkit / PyTorch version compatibility matrix (Tesla P40, sm_61, etc.)
 
 ### Utility Scripts
 
@@ -36,6 +37,7 @@ This is a Docker container project for AI/ML tools, specifically focused on Invo
 ## Key Components
 
 - **Docker Configurations**: `invoke_ai.Dockerfile`, `comfy.Dockerfile` for containerized AI tools
+  - `comfy.Dockerfile` currently uses `pytorch/pytorch:2.6.0-cuda12.6-cudnn9-runtime` to retain Tesla P40 (sm_61) compatibility
 - **Scripts**: Shell scripts in `/scripts` for running different services
 - **Model Loader**: New civit_model_loader component for downloading models from Civitai
 - **Converter**: InvokeAI to Automatic1111 metadata conversion utilities with standalone functions
